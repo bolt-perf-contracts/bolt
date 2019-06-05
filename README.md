@@ -11,8 +11,8 @@ To run the NAT (but not to verify it), you need to set up hugepages for DPDK; se
 
 # Dependencies
 
-Our dependencies,, are modified versions of [KLEE](https://github.com/vignat/klee) and 
-[KLEE-uClibc](https://github.com/vignat/klee-uclibc).
+Our dependencies, are modified versions of [KLEE](https://github.com/vignat/klee),
+[KLEE-uClibc](https://github.com/vignat/klee-uclibc) and [Intel Pin](https://software.intel.com/sites/landingpage/pintool/docs/97554/Pin/html).
 
 
 # Installation
