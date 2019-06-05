@@ -32,7 +32,10 @@ $ make
 $ ./build/nat
 
 # Running Bolt on VigNAT
-$ bash ../test-bolt.sh
+$ pushd../../perf-contracts
+$ make
+$ popd
+$ bash ../test-bolt.sh vignat
 ```
 
 

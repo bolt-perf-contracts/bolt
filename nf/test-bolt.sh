@@ -3,7 +3,15 @@ KLEE_DIR=~/projects/Bolt/klee
 
 set -e
 
-TEST=${1:-all}
+NF=$1
+TEST=${2:-all}
+
+if [ $NF != "vignat" ] && [ $NF != "bridge" ] && [ $NF != "vigbalancer" ]; then
+  echo "Unsupported parameter"
+	echo $TEST
+  exit
+fi
+
 
 if [ "$TEST" != "all" ] && [ "$TEST" != "contracts-only" ]; then
   echo "Unsupported parameter"
@@ -13,7 +21,7 @@ fi
 
 if [ "$TEST" == "all" ]; then 
 	make verify-dpdk
-	make executable-vignat
+	make executable-$NF
 	make -j $(nproc) instr-traces
 fi
 
