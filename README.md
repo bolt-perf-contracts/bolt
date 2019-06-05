@@ -42,4 +42,4 @@ Subdirectories have their own README files.
 
 * nf - contains the libVig library of the data structures and all the NFs involved in the project
 * install - patches and config files for the Bolt toolchain dependencies
-* perf-contracts - contains the performance contracts for the data structure library. These are used as builing blocks to generate performance contracts for entire NFs. 
+* perf-contracts - contains the performance contracts for the data structure library. These are used as building blocks to generate performance contracts for entire NFs. 
