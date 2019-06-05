@@ -86,21 +86,37 @@
 static const uint16_t RX_QUEUES_COUNT = 1;
 static const uint16_t TX_QUEUES_COUNT = 1;
 
+#define batch_param 100000
 
-#ifdef DUMP_PERF
+
+#if defined (DUMP_LATENCY) || defined (DUMP_TPUT)
 #include "lib/nf_log.h"
 #include <time.h>
 #include "x86intrin.h"
 struct timespec start_time1, end_time;
-#define batch_param 10000
-struct procTimeEntry{
-  int traffic_class;
-  long processing_time;
-} processing_times[batch_param];
+
 long ctr = 0;
 
-extern int TRAFFIC_CLASS;
-#endif//DUMP_PERF
+  #ifdef DUMP_LATENCY
+     struct procTimeEntry{
+        int traffic_class;
+  	long processing_time;
+     } processing_times[batch_param];
+     
+     extern int TRAFFIC_CLASS;
+  #endif //DUMP_LATENCY
+
+#endif//DUMP_LATENCY || DUMP_TPUT
+
+#ifdef DUMP_PERF_CTRS
+#include <assert.h>
+#include "papi.h"
+long ctr =0;
+struct perf_ctrs_entry{
+  long long cycles;
+  long long l3_misses;
+} perf_ctrs[batch_param];
+#endif //DUMP_PERF_CTRS
 
 // --- Static config ---
 // TODO see remark in lcore_main
@@ -179,27 +195,21 @@ nf_init_device(uint16_t device, struct rte_mempool *mbuf_pool)
       txq,
       TX_QUEUE_SIZE,
       rte_eth_dev_socket_id(device),
-      tx_confp
-	);
+      NULL // default config
+    );
     if (retval != 0) {
       return retval;
     }
   }
 
   // Allocate and set up RX queues
-  // with rx_free_thresh = 1 so that internal descriptors are replenished always,
-  // i.e. 1 mbuf is taken (for RX) from the pool and 1 is put back (when freeing),
-  //      at each iteration, which avoids havocing problems
-  struct rte_eth_rxconf rx_conf;
-  memset(&rx_conf, 0, sizeof(struct rte_eth_rxconf));
-  rx_conf.rx_free_thresh = 1;
   for (int rxq = 0; rxq < RX_QUEUES_COUNT; rxq++) {
     retval = rte_eth_rx_queue_setup(
       device,
       rxq,
       RX_QUEUE_SIZE,
       rte_eth_dev_socket_id(device),
-      &rx_conf,
+      NULL, // default config
       mbuf_pool
     );
     if (retval != 0) {
@@ -272,12 +282,35 @@ lcore_main(void)
   klee_possibly_havoc(&buf, sizeof(buf), "buf_addr");
   klee_possibly_havoc(&actual_tx_len, sizeof(actual_tx_len), "actual_tx_len");
 #endif//KLEE_VERIFICATION
-  VIGOR_LOOP_BEGIN
-    buf = NULL;
 
-#ifdef DUMP_PERF
+#ifdef DUMP_TPUT
       int gettime_result1 = clock_gettime(CLOCK_MONOTONIC, &start_time1);
-#endif//DUMP_PERF
+#endif//DUMP_TPUT
+
+#ifdef DUMP_PERF_CTRS
+   int retval,num_hwcntrs = 0, EventSet = PAPI_NULL, native;
+   typeof (PAPI_OK) papi_ok_proxy ;
+   int Events[] = {PAPI_TOT_INS,PAPI_L3_TCM};
+   assert((num_hwcntrs = PAPI_num_counters()) > PAPI_OK);
+   assert(sizeof(Events) / sizeof(Events[0]) <= num_hwcntrs);
+   assert((retval = PAPI_start_counters(Events, sizeof(Events) / sizeof(Events[0]))) == PAPI_OK);
+   long long values[sizeof(Events) / sizeof(Events[0])];
+   assert((retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]))) == PAPI_OK);
+
+   long long ref_cycles = values[0];
+   long long l3_tcm = values[3]; 
+#endif
+  
+  VIGOR_LOOP_BEGIN
+  buf = NULL;
+
+#ifdef DUMP_LATENCY
+      int gettime_result1 = clock_gettime(CLOCK_MONOTONIC, &start_time1);
+#endif//DUMP_LATENCY
+
+#ifdef DUMP_PERF_CTRS
+   retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
+#endif 
 
     actual_rx_len = rte_eth_rx_burst(VIGOR_DEVICE, 0, &buf, 1);
 
@@ -301,9 +334,28 @@ lcore_main(void)
         if (actual_tx_len == 0) {
           rte_pktmbuf_free(buf);
         }
+        else {
+          #ifdef DUMP_PERF_CTRS
+  retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
+  if(actual_rx_len!=0) {
+    perf_ctrs[ctr].cycles = values[0];
+    perf_ctrs[ctr].l3_misses = values[1];
+    ctr++;
+  }
+  if(ctr >= batch_param){
+    for(int i = 0; i < batch_param; i++) {
+            printf("Cycles %lld L3-Misses %lld \n",
+                   perf_ctrs[i].cycles,
+                   perf_ctrs[i].l3_misses);
+          }
+    fflush(stdout);
+    ctr = 0;
+  }
+#endif //DUMP_PERF_CTRS
+        }
       }
     }
-#ifdef DUMP_PERF
+#ifdef DUMP_LATENCY
       int gettime_result2 = clock_gettime(CLOCK_MONOTONIC, &end_time);
       if (gettime_result1 == 0 && gettime_result2 == 0 && actual_rx_len!=0) {
         processing_times[ctr].processing_time =
@@ -321,14 +373,33 @@ lcore_main(void)
           fflush(stdout);
         }
       }
-#endif//DUMP_PERF
+#endif//DUMP_LATENCY
 
+
+#ifdef DUMP_TPUT
+      if (actual_rx_len!=0) ctr++; //Packet was processed
+      if(batch_param <= ctr) {
+         int gettime_result2 = clock_gettime(CLOCK_MONOTONIC, &end_time);
+         if (gettime_result1 == 0 && gettime_result2 == 0) { //I dunno why this is there tbh
+             long proc_time = ((end_time.tv_sec - start_time1.tv_sec)*1000000000 +
+              (end_time.tv_nsec - start_time1.tv_nsec));
+             printf("Time for %ld packets is %ld ns\n",
+                   ctr,proc_time);
+         }
+         fflush(stdout);
+         ctr = 0;
+         fflush(stdout);
+	 gettime_result1 = clock_gettime(CLOCK_MONOTONIC, &start_time1);
+      }
+#endif//DUMP_TPUT
 #ifdef STOP_ON_RX_0
     else if(VIGOR_DEVICE == 0) { return; }
 #endif
 #ifdef STOP_ON_RX_1
     else if(VIGOR_DEVICE == 1) { return; }
 #endif
+
+  
   VIGOR_LOOP_END
 }
 

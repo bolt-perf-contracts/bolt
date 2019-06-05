@@ -6,8 +6,8 @@
 
 #ifdef DUMP_PERF_VARS
 #include "lib/nf_log.h"
-char* perf_dump_suffix = "";
-char* perf_dump_prefix = "";
+char *perf_dump_suffix = "";
+char *perf_dump_prefix = "";
 #endif
 
 //@ #include <list.gh>
@@ -19,7 +19,6 @@ char* perf_dump_prefix = "";
 //@ #include "map.gh"
 //@ #include "natlist.gh"
 //@ #include "chain-buckets.gh"
-
 
 /*@
   fixpoint bool has_given_hash_fp<kt>(fixpoint (kt, int) hash,
@@ -44,115 +43,117 @@ char* perf_dump_prefix = "";
 
 #ifdef DUMP_PERF_VARS
 
-int first_empty(int*chns, int capacity)
+int first_empty(int *chns, int capacity)
 {
   int i;
-  for(i=0;i<capacity;i++)
-  { 
-    if(chns[i] == 0)
-    { return i;}
+  for (i = 0; i < capacity; i++)
+  {
+    if (chns[i] == 0)
+    {
+      return i;
+    }
   }
   return i;
 }
 
-int longest_subchain(int* busybits, int capacity)
-{  
-   int i,start,index;
-   int curr = 0; 
-   int longest = 0;
-   start = first_empty(busybits,capacity);
-   for(i=0;i<capacity;i++)
-   {  
-      index = (start+i)%capacity;
-      if(busybits[index]!=0)
-      {curr=curr +1;}
-      else
-      { 
-        if(curr > longest)
-        {  
-           longest=curr;
-           curr=0;
-        }
+int longest_subchain(int *busybits, int capacity)
+{
+  int i, start, index;
+  int curr = 0;
+  int longest = 0;
+  start = first_empty(busybits, capacity);
+  for (i = 0; i < capacity; i++)
+  {
+    index = (start + i) % capacity;
+    if (busybits[index] != 0)
+    {
+      curr = curr + 1;
+    }
+    else
+    {
+      if (curr > longest)
+      {
+        longest = curr;
+        curr = 0;
       }
     }
-    return longest;
+  }
+  return longest;
 }
 
-int longest_chain(int* chns, int capacity)
+int longest_chain(int *chns, int capacity)
 {
-   int i,start,index;
-   int curr = 0;
-   int longest = 0;
-   start = first_empty(chns,capacity);
-   for(i=0;i<capacity;i++)
-   {
-      index = (start+i)%capacity;
-      if(chns[index]!=0)
-      {curr=curr +1;}
+  int i, start, index;
+  int curr = 0;
+  int longest = 0;
+  start = first_empty(chns, capacity);
+  for (i = 0; i < capacity; i++)
+  {
+    index = (start + i) % capacity;
+    if (chns[index] != 0)
+    {
+      curr = curr + 1;
+    }
+    else
+    {
+      if (curr > longest)
+      {
+        longest = curr;
+        curr = 0;
+      }
+    }
+  }
+  return longest;
+}
+
+int longest_collision_chain(int *chns, int *key_hashes, int *bbts, int capacity)
+{
+  int i, start, index;
+  int curr[capacity]; //Hash is always modulo capacity
+  for (i = 0; i < capacity; i++)
+  {
+    curr[i] = 0;
+  }
+  int max = 0;
+  int longest = 0;
+  start = first_empty(chns, capacity);
+  for (i = 0; i < capacity; i++)
+  {
+    index = (start + i) % capacity;
+    int key_hash = (key_hashes[index] % capacity + capacity) % capacity;
+    if (chns[index] != 0 && bbts[index])
+    {
+      ++curr[key_hash];
+      if (curr[key_hash] > max)
+      {
+        max = curr[key_hash];
+      }
       else
       {
-        if(curr > longest)
-	{ 
-           longest=curr;
-           curr=0;
+        if (max > longest)
+        {
+          longest = max;
+          max = 0;
+          for (i = 0; i < capacity; i++)
+          {
+            curr[i] = 0;
+          }
         }
       }
     }
-    return longest;
+  }
+  return longest;
 }
+#endif //DUMP_PERF_VARS
 
-int longest_collision_chain(int* chns, int* key_hashes, int* bbts, int capacity)
-{
-   int i,start,index;
-   int curr[capacity]; //Hash is always modulo capacity
-   for(i=0;i<capacity;i++)
-   {curr[i] =0;}
-   int max = 0;
-   int longest = 0;
-   start = first_empty(chns,capacity);
-   for(i=0;i<capacity;i++)
-   {
-     index = (start+i)%capacity;
-     int key_hash = (key_hashes[index]%capacity + capacity) % capacity;
-     if(chns[index]!=0 && bbts[index])
-     { 
-        ++curr[key_hash];
-        if(curr[key_hash] >max)
-        {max = curr[key_hash];}
-        else
-        {
-           if(max > longest)
-           {
-             longest=max;
-             max=0;
-             for(i=0;i<capacity;i++)
-             {curr[i] =0;}
-           }
-         }
-      }
-    }
-    return longest;
-}     
-#endif//DUMP_PERF_VARS
-
-
-static
-int loop(int k, int capacity)
+static int loop(int k, int capacity)
 //@ requires 0 < capacity &*& 2*capacity < INT_MAX;
 /*@ ensures 0 <= result &*& result < capacity &*&
             result == loop_fp(k, capacity); @*/
 {
-#ifdef USE_AND_FOR_HASH
-  int g = k & (capacity - 1);
-  int res = (g+capacity) & (capacity - 1);
 
-#else
-  int g = k%capacity;
-  //@ div_mod(g, k, capacity);
-  //@ assert(2*capacity< INT_MAX);
-  int res = (g + capacity)%capacity;
-  //@ div_mod_gt_0(res, g + capacity, capacity);
-#endif
+  int g = k & (capacity - 1);
+  int res = (g + capacity) & (capacity - 1);
   return res;
 }
 
@@ -287,7 +288,6 @@ int loop(int k, int capacity)
     }
   }
 @*/
-
 
 /*@
   lemma void hash_for_given_key<kt>(list<pair<kt, nat> > chains,
@@ -469,7 +469,6 @@ int loop(int k, int capacity)
     }
   }
   @*/
-
 
 /*@
   @*/
@@ -712,7 +711,6 @@ int loop(int k, int capacity)
   }
 @*/
 
-
 /*@
   lemma void up_to_neq_non_mem<t>(list<t> l, t x)
   requires true == up_to(nat_of_int(length(l)), (nthProp)(l, (neq)(x)));
@@ -727,7 +725,6 @@ int loop(int k, int capacity)
   }
   @*/
 
-
 /*@
   lemma void no_key_found<kt>(list<option<kt> > ks, kt k)
   requires true == up_to(nat_of_int(length(ks)), (nthProp)(ks, (neq)(some(k))));
@@ -737,10 +734,9 @@ int loop(int k, int capacity)
   }
 @*/
 
-static
-int find_key/*@ <kt> @*/(int* busybits, void** keyps, int* k_hashes, int* chns,
-                         void* keyp, map_keys_equality* eq, int key_hash,
-                         int capacity)
+static int find_key /*@ <kt> @*/ (int *busybits, void **keyps, int *k_hashes, int *chns,
+                                  void *keyp, map_keys_equality *eq, int key_hash,
+                                  int capacity)
 /*@ requires hmapping<kt>(?kpr, ?hsh, capacity, busybits, ?kps, k_hashes, ?hm) &*&
              buckets_ks_insync(chns, capacity, ?buckets, hsh,
                                  hmap_ks_fp(hm)) &*&
@@ -770,7 +766,7 @@ int find_key/*@ <kt> @*/(int* busybits, void** keyps, int* k_hashes, int* chns,
   int start = loop(key_hash, capacity);
   int i = 0;
   for (; i < capacity; ++i)
-    /*@ invariant pred_mapping(kps, bbs, kpr, ks) &*&
+  /*@ invariant pred_mapping(kps, bbs, kpr, ks) &*&
                   ints(busybits, capacity, bbs) &*&
                   ints(k_hashes, capacity, khs) &*&
                   ints(chns, capacity, chnlist) &*&
@@ -787,9 +783,9 @@ int find_key/*@ <kt> @*/(int* busybits, void** keyps, int* k_hashes, int* chns,
                                 (byLoopNthProp)(ks, (neq)(some(k)),
                                                 capacity, start));
     @*/
-    //@ decreases capacity - i;
+  //@ decreases capacity - i;
   {
-#ifdef DUMP_PERF_VARS 
+#ifdef DUMP_PERF_VARS
     buckets_traversed = buckets_traversed + 1;
 #endif
     //@ pred_mapping_same_len(bbs, ks);
@@ -797,32 +793,37 @@ int find_key/*@ <kt> @*/(int* busybits, void** keyps, int* k_hashes, int* chns,
     int bb = busybits[index];
     int kh = k_hashes[index];
     int chn = chns[index];
-    void* kp = keyps[index];
-    if (bb != 0 && kh == key_hash) {
+    void *kp = keyps[index];
+    if (bb != 0 && kh == key_hash)
+    {
       //@ close pred_mapping(nil, nil, kpr, nil);
       //@ extract_pred_for_key(nil, nil, nil, index, bbs, ks);
       //@ append_nil(reverse(take(index, kps)));
       //@ append_nil(reverse(take(index, bbs)));
       //@ append_nil(reverse(take(index, ks)));
-      if (eq(kp, keyp)) {
+      if (eq(kp, keyp))
+      {
         /*@ recover_pred_mapping(kps, bbs, ks, index); @*/
         //@ hmap_find_this_key(hm, index, k);
         //@ close hmapping<kt>(kpr, hsh, capacity, busybits, kps, k_hashes, hm);
         //@ close buckets_ks_insync(chns, capacity, buckets, hsh, ks);
 #ifdef DUMP_PERF_VARS
-      NF_PERF_DEBUG("Map_impl_get:Success:Num_bucket_traversals%s:%d",perf_dump_suffix,buckets_traversed);
-      NF_PERF_DEBUG("Map_impl_get:Success:Num_hash_collisions%s:%d",perf_dump_suffix,hash_collisions);
+        NF_PERF_DEBUG("Map_impl_get:Success:Num_bucket_traversals%s:%d", perf_dump_suffix, buckets_traversed);
+        NF_PERF_DEBUG("Map_impl_get:Success:Num_hash_collisions%s:%d", perf_dump_suffix, hash_collisions);
 #endif
         return index;
       }
-#ifdef DUMP_PERF_VARS 
+#ifdef DUMP_PERF_VARS
       hash_collisions = hash_collisions + 1;
 #endif
       //@ recover_pred_mapping(kps, bbs, ks, index);
-    } else {
+    }
+    else
+    {
       //@ if (bb != 0) no_hash_no_key(ks, khs, k, index, hsh);
       //@ if (bb == 0) no_bb_no_key(ks, bbs, index);
-      if (chn == 0) {
+      if (chn == 0)
+      {
         //@ assert length(chnlist) == capacity;
         //@ buckets_keys_chns_same_len(buckets);
         //@ assert length(buckets) == capacity;
@@ -839,8 +840,8 @@ int find_key/*@ <kt> @*/(int* busybits, void** keyps, int* k_hashes, int* chns,
         //@ close hmapping<kt>(kpr, hsh, capacity, busybits, kps, k_hashes, hm);
         //@ close buckets_ks_insync(chns, capacity, buckets, hsh, ks);
 #ifdef DUMP_PERF_VARS
-      NF_PERF_DEBUG("Map_impl_get:Truncated fail:Num_bucket_traversals%s:%d",perf_dump_suffix,buckets_traversed);
-      NF_PERF_DEBUG("Map_impl_get:Truncated fail:Num_hash_collisions%s:%d",perf_dump_suffix,hash_collisions);
+        NF_PERF_DEBUG("Map_impl_get:Truncated fail:Num_bucket_traversals%s:%d", perf_dump_suffix, buckets_traversed);
+        NF_PERF_DEBUG("Map_impl_get:Truncated fail:Num_hash_collisions%s:%d", perf_dump_suffix, hash_collisions);
 #endif
         return -1;
       }
@@ -857,8 +858,8 @@ int find_key/*@ <kt> @*/(int* busybits, void** keyps, int* k_hashes, int* chns,
   //@ close buckets_ks_insync(chns, capacity, buckets, hsh, ks);
   //@ close hmapping<kt>(kpr, hsh, capacity, busybits, kps, k_hashes, hm);
 #ifdef DUMP_PERF_VARS
-      NF_PERF_DEBUG("Map_impl_get:Fail:Num_bucket_traversals%s:%d",perf_dump_suffix,buckets_traversed);
-      NF_PERF_DEBUG("Map_impl_get:Fail:Num_hash_collisions%s:%d",perf_dump_suffix,hash_collisions);
+  NF_PERF_DEBUG("Map_impl_get:Fail:Num_bucket_traversals%s:%d", perf_dump_suffix, buckets_traversed);
+  NF_PERF_DEBUG("Map_impl_get:Fail:Num_hash_collisions%s:%d", perf_dump_suffix, hash_collisions);
 #endif
   return -1;
 }
@@ -919,13 +920,12 @@ int find_key/*@ <kt> @*/(int* busybits, void** keyps, int* k_hashes, int* chns,
   } //took 10m
   @*/
 
-static
-int find_key_remove_chain/*@ <kt> @*/(int* busybits, void** keyps,
-                                      int* k_hashes, int* chns,
-                                      void* keyp, map_keys_equality* eq,
-                                      int key_hash,
-                                      int capacity,
-                                      void** keyp_out)
+static int find_key_remove_chain /*@ <kt> @*/ (int *busybits, void **keyps,
+                                               int *k_hashes, int *chns,
+                                               void *keyp, map_keys_equality *eq,
+                                               int key_hash,
+                                               int capacity,
+                                               void **keyp_out)
 /*@ requires hmapping<kt>(?kpr, ?hsh, capacity, busybits, ?kps, k_hashes, ?hm) &*&
              buckets_ks_insync(chns, capacity, ?buckets, hsh, hmap_ks_fp(hm)) &*&
              pointers(keyps, capacity, kps) &*&
@@ -951,7 +951,7 @@ int find_key_remove_chain/*@ <kt> @*/(int* busybits, void** keyps,
 {
 #ifdef DUMP_PERF_VARS
   int buckets_traversed = 0;
-  int hash_collisions = 0; 
+  int hash_collisions = 0;
 #endif
   //@ open hmapping(_, _, _, _, _, _, hm);
   //@ open buckets_ks_insync(chns, capacity, buckets, hsh, hmap_ks_fp(hm));
@@ -967,7 +967,7 @@ int find_key_remove_chain/*@ <kt> @*/(int* busybits, void** keyps,
   //@ buckets_remove_add_one_chain(buckets, start, k);
   //@ loop_bijection(start, capacity);
   for (; i < capacity; ++i)
-    /*@ invariant pred_mapping(kps, bbs, kpr, ks) &*&
+  /*@ invariant pred_mapping(kps, bbs, kpr, ks) &*&
                   ints(busybits, capacity, bbs) &*&
                   ints(k_hashes, capacity, khs) &*&
                   ints(chns, capacity, chnlist) &*&
@@ -990,24 +990,26 @@ int find_key_remove_chain/*@ <kt> @*/(int* busybits, void** keyps,
                                 (byLoopNthProp)(ks, (neq)(some(k)),
                                                 capacity, start));
     @*/
-    //@ decreases capacity - i;
+  //@ decreases capacity - i;
   {
     //@ pred_mapping_same_len(bbs, ks);
-#ifdef DUMP_PERF_VARS 
+#ifdef DUMP_PERF_VARS
     buckets_traversed = buckets_traversed + 1;
 #endif
     int index = loop(start + i, capacity);
     int bb = busybits[index];
     int kh = k_hashes[index];
     int chn = chns[index];
-    void* kp = keyps[index];
-    if (bb != 0 && kh == key_hash) {
+    void *kp = keyps[index];
+    if (bb != 0 && kh == key_hash)
+    {
       //@ close pred_mapping(nil, nil, kpr, nil);
       //@ extract_pred_for_key(nil, nil, nil, index, bbs, ks);
       //@ append_nil(reverse(take(index, kps)));
       //@ append_nil(reverse(take(index, bbs)));
       //@ append_nil(reverse(take(index, ks)));
-      if (eq(kp, keyp)) {
+      if (eq(kp, keyp))
+      {
         /*@ recover_pred_mapping(kps, bbs, ks, index); @*/
         //@ hmap_find_this_key(hm, index, k);
         busybits[index] = 0;
@@ -1031,16 +1033,18 @@ int find_key_remove_chain/*@ <kt> @*/(int* busybits, void** keyps,
                                       update(index_of(some(k), ks), none, ks));
           @*/
 #ifdef DUMP_PERF_VARS
-        NF_PERF_DEBUG("Map_impl_erase:Success:Num_bucket_traversals%s:%d",perf_dump_suffix,buckets_traversed);
-        NF_PERF_DEBUG("Map_impl_erase:Success:Num_hash_collisions%s:%d",perf_dump_suffix,hash_collisions);
+        NF_PERF_DEBUG("Map_impl_erase:Success:Num_bucket_traversals%s:%d", perf_dump_suffix, buckets_traversed);
+        NF_PERF_DEBUG("Map_impl_erase:Success:Num_hash_collisions%s:%d", perf_dump_suffix, hash_collisions);
 #endif
         return index;
       }
-#ifdef DUMP_PERF_VARS 
-        hash_collisions = hash_collisions + 1;
+#ifdef DUMP_PERF_VARS
+      hash_collisions = hash_collisions + 1;
 #endif
       //@ recover_pred_mapping(kps, bbs, ks, index);
-    } else {
+    }
+    else
+    {
       //@ assert(length(ks) == capacity);
       //@ if (bb != 0) no_hash_no_key(ks, khs, k, index, hsh);
       //@ if (bb == 0) no_bb_no_key(ks, bbs, index);
@@ -1114,8 +1118,8 @@ int find_key_remove_chain/*@ <kt> @*/(int* busybits, void** keyps,
 
   //@ assert false;
 #ifdef DUMP_PERF_VARS
-  NF_PERF_DEBUG("Map_impl_erase:Fail:Num_bucket_traversals%s:%d",perf_dump_suffix,buckets_traversed);
-  NF_PERF_DEBUG("Map_impl_erase:Fail:Num_hash_collisions%s:%d",perf_dump_suffix,hash_collisions);
+  NF_PERF_DEBUG("Map_impl_erase:Fail:Num_bucket_traversals%s:%d", perf_dump_suffix, buckets_traversed);
+  NF_PERF_DEBUG("Map_impl_erase:Fail:Num_hash_collisions%s:%d", perf_dump_suffix, hash_collisions);
 #endif
   return -1;
 }
@@ -1221,7 +1225,6 @@ int find_key_remove_chain/*@ <kt> @*/(int* busybits, void** keyps,
   }//took 5m
   @*/
 
-
 /*@
 lemma void chains_depleted_no_hope<kt>(list<bucket<kt> > buckets,
                                        int i,
@@ -1256,8 +1259,7 @@ ensures false == bucket_has_key_fp(k, nth(start, buckets));
 
 @*/
 
-static
-int find_empty/*@ <kt> @*/(int* busybits, int* chns, int start, int capacity)
+static int find_empty /*@ <kt> @*/ (int *busybits, int *chns, int start, int capacity)
 /*@ requires hmapping<kt>(?kp, ?hsh, capacity, busybits, ?kps, ?k_hashes, ?hm) &*&
              buckets_ks_insync(chns, capacity, ?buckets, hsh, hmap_ks_fp(hm)) &*&
              pointers(?keyps, capacity, kps) &*&
@@ -1280,7 +1282,7 @@ int find_empty/*@ <kt> @*/(int* busybits, int* chns, int start, int capacity)
   //@ loop_bijection(start, capacity);
   int i = 0;
   for (; i < capacity; ++i)
-    /*@ invariant pred_mapping(kps, bbs, kp, ks) &*&
+  /*@ invariant pred_mapping(kps, bbs, kp, ks) &*&
                   ints(busybits, capacity, bbs) &*&
                   ints(k_hashes, capacity, khs) &*&
                   pointers(keyps, capacity, kps) &*&
@@ -1292,7 +1294,7 @@ int find_empty/*@ <kt> @*/(int* busybits, int* chns, int start, int capacity)
                                            start, loop_fp(start + i, capacity),
                                            ks);
       @*/
-    //@ decreases capacity - i;
+  //@ decreases capacity - i;
   {
     //@ pred_mapping_same_len(bbs, ks);
     int index = loop(start + i, capacity);
@@ -1304,19 +1306,20 @@ int find_empty/*@ <kt> @*/(int* busybits, int* chns, int start, int capacity)
       @*/
     //@ assert ints(chns, capacity, ?chnlist);
     int bb = busybits[index];
-    if (0 == bb) {
+    if (0 == bb)
+    {
       //@ zero_bbs_is_for_empty(bbs, ks, index);
       //@ close hmapping<kt>(kp, hsh, capacity, busybits, kps, k_hashes, hm);
       /*@ close buckets_ks_insync_Xchain(chns, capacity, buckets, hsh,
                                          start, index, ks);
         @*/
 #ifdef DUMP_PERF_VARS
-      NF_PERF_DEBUG("Map_impl_put:Success:Num_bucket_traversals%s:%d",perf_dump_suffix,buckets_traversed);
+      NF_PERF_DEBUG("Map_impl_put:Success:Num_bucket_traversals%s:%d", perf_dump_suffix, buckets_traversed);
 #endif
       return index;
     }
     int chn = chns[index];
-    
+
     //@ buckets_keys_chns_same_len(buckets);
     //@ buckets_ok_chn_bound(buckets, index);
     /*@ outside_part_chn_no_effect(buckets_get_chns_fp(buckets), start,
@@ -1371,7 +1374,7 @@ int find_empty/*@ <kt> @*/(int* busybits, int* chns, int start, int capacity)
   //@ full_size(ks);
   //@ close hmapping<kt>(kp, hsh, capacity, busybits, kps, k_hashes, hm);
 #ifdef DUMP_PERF_VARS
-  NF_PERF_DEBUG("Map_impl_put:Fail:Num_bucket_traversals%s:%d",perf_dump_suffix,buckets_traversed);
+  NF_PERF_DEBUG("Map_impl_put:Fail:Num_bucket_traversals%s:%d", perf_dump_suffix, buckets_traversed);
 #endif
   return -1;
 }
@@ -1614,9 +1617,9 @@ int find_empty/*@ <kt> @*/(int* busybits, int* chns, int start, int capacity)
   }//took 25m
   @*/
 
-void map_impl_init/*@ <kt> @*/(int* busybits, map_keys_equality* eq,
-                               void** keyps, int* khs, int* chns,
-                               int* vals, int capacity)
+void map_impl_init /*@ <kt> @*/ (int *busybits, map_keys_equality *eq,
+                                 void **keyps, int *khs, int *chns,
+                                 int *vals, int capacity)
 /*@ requires map_key_type<kt>() &*& map_key_hash<kt>(?hash) &*&
              [?fr]is_map_keys_equality<kt>(eq, ?keyp) &*&
              map_record_property<kt>(?recp) &*&
@@ -1641,7 +1644,7 @@ void map_impl_init/*@ <kt> @*/(int* busybits, map_keys_equality* eq,
   //@ open map_record_property(_);
   int i = 0;
   for (; i < capacity; ++i)
-    /*@ invariant [fr]is_map_keys_equality<kt>(eq, keyp) &*&
+  /*@ invariant [fr]is_map_keys_equality<kt>(eq, keyp) &*&
                   ints(busybits, i, zero_list_fp(nat_of_int(i))) &*&
                   ints(busybits + i, capacity - i, drop(i,bbs)) &*&
                   pointers(keyps, capacity, kplist) &*&
@@ -1652,7 +1655,7 @@ void map_impl_init/*@ <kt> @*/(int* busybits, map_keys_equality* eq,
                   0 < capacity &*& 2*capacity < INT_MAX &*&
                   0 <= i &*& i <= capacity;
       @*/
-    //@ decreases capacity - i;
+  //@ decreases capacity - i;
   {
     //@ move_int(busybits, i, capacity);
     //@ move_int(chns, i, capacity);
@@ -1990,12 +1993,12 @@ void map_impl_init/*@ <kt> @*/(int* busybits, map_keys_equality* eq,
   }
   @*/
 
-int map_impl_get/*@ <kt> @*/(int* busybits, void** keyps,
-                             int* k_hashes, int* chns,
-                             int* values,
-                             void* keyp, map_keys_equality* eq,
-                             int hash, int* value,
-                             int capacity)
+int map_impl_get /*@ <kt> @*/ (int *busybits, void **keyps,
+                               int *k_hashes, int *chns,
+                               int *values,
+                               void *keyp, map_keys_equality *eq,
+                               int hash, int *value,
+                               int capacity)
 /*@ requires mapping<kt>(?m, ?addrs, ?kp, ?recp, ?hsh, capacity, busybits,
                          keyps, k_hashes, chns, values) &*&
              kp(keyp, ?k) &*&
@@ -2014,15 +2017,14 @@ int map_impl_get/*@ <kt> @*/(int* busybits, void** keyps,
              (result == 0 &*&
               *value |-> v)); @*/
 {
-  
 #ifdef DUMP_PERF_VARS
-  int occupancy = map_impl_size(busybits,capacity);
-  NF_PERF_DEBUG("Map_impl_get:%soccupancy:%d",perf_dump_prefix,occupancy);
-  int long_chain = longest_chain(chns,capacity);
-  NF_PERF_DEBUG("Map_impl_get:Longest_chain%s:%d",perf_dump_suffix,long_chain);
-  int longest_cchain = longest_collision_chain(chns,k_hashes,busybits,capacity);
-  NF_PERF_DEBUG("Map_impl_get:Longest_collison_chain%s:%d",perf_dump_suffix,longest_cchain);
-#endif 
+  int occupancy = map_impl_size(busybits, capacity);
+  NF_PERF_DEBUG("Map_impl_get:%soccupancy:%d", perf_dump_prefix, occupancy);
+  int long_chain = longest_chain(chns, capacity);
+  NF_PERF_DEBUG("Map_impl_get:Longest_chain%s:%d", perf_dump_suffix, long_chain);
+  int longest_cchain = longest_collision_chain(chns, k_hashes, busybits, capacity);
+  NF_PERF_DEBUG("Map_impl_get:Longest_collison_chain%s:%d", perf_dump_suffix, longest_cchain);
+#endif
 
   //@ open mapping(m, addrs, kp, recp, hsh, capacity, busybits, keyps, k_hashes, chns, values);
   //@ open hmapping(kp, hsh, capacity, busybits, ?kps, k_hashes, ?hm);
@@ -2044,7 +2046,6 @@ int map_impl_get/*@ <kt> @*/(int* busybits, void** keyps,
   //@ close mapping(m, addrs, kp, recp, hsh, capacity, busybits, keyps, k_hashes, chns, values);
   return 1;
 }
-
 
 /*@
   lemma void ks_map_size<kt>(list<option<kt> > ks, list<pair<kt,int> > m)
@@ -2322,11 +2323,11 @@ int map_impl_get/*@ <kt> @*/(int* busybits, void** keyps,
   }//took 275m and counting
   @*/
 
-void map_impl_put/*@ <kt> @*/(int* busybits, void** keyps,
-                              int* k_hashes, int* chns,
-                              int* values,
-                              void* keyp, int hash, int value,
-                              int capacity)
+void map_impl_put /*@ <kt> @*/ (int *busybits, void **keyps,
+                                int *k_hashes, int *chns,
+                                int *values,
+                                void *keyp, int hash, int value,
+                                int capacity)
 /*@ requires mapping<kt>(?m, ?addrs, ?kp, ?recp, ?hsh, capacity, busybits,
                          keyps, k_hashes, chns, values) &*&
              [0.5]kp(keyp, ?k) &*& true == recp(k, value) &*&
@@ -2343,11 +2344,11 @@ void map_impl_put/*@ <kt> @*/(int* busybits, void** keyps,
 {
 
 #ifdef DUMP_PERF_VARS
-  int occupancy = map_impl_size(busybits,capacity);
-  NF_PERF_DEBUG("Map_impl_put:%soccupancy:%d",perf_dump_prefix,occupancy);
-  int longest_schain = longest_subchain(busybits,capacity);
-  NF_PERF_DEBUG("Map_impl_put:Longest_subchain%s:%d",perf_dump_suffix,longest_schain);
-#endif 
+  int occupancy = map_impl_size(busybits, capacity);
+  NF_PERF_DEBUG("Map_impl_put:%soccupancy:%d", perf_dump_prefix, occupancy);
+  int longest_schain = longest_subchain(busybits, capacity);
+  NF_PERF_DEBUG("Map_impl_put:Longest_subchain%s:%d", perf_dump_suffix, longest_schain);
+#endif
 
   //@ open mapping(m, addrs, kp, recp, hsh, capacity, busybits, keyps, k_hashes, chns, values);
   //@ open hmapping(kp, hsh, capacity, busybits, ?kps, k_hashes, ?hm);
@@ -2363,7 +2364,6 @@ void map_impl_put/*@ <kt> @*/(int* busybits, void** keyps,
   //@ assert length(buckets) == capacity;
   int index = find_empty(busybits, chns, start, capacity);
 
-
   //@ hmapping_ks_capacity(hm, capacity);
   //@ open hmapping(kp, hsh, capacity, busybits, kps, k_hashes, hm);
   //@ assert pred_mapping(kps, ?bbs, kp, ks);
@@ -2377,6 +2377,7 @@ void map_impl_put/*@ <kt> @*/(int* busybits, void** keyps,
   keyps[index] = keyp;
   k_hashes[index] = hash;
   values[index] = value;
+
   /*@ close hmapping(kp, hsh, capacity, busybits, update(index, keyp, kps),
                      k_hashes, hmap_put_key_fp(hm, index, k, hash));
     @*/
@@ -2588,11 +2589,11 @@ void map_impl_put/*@ <kt> @*/(int* busybits, void** keyps,
   }
   @*/
 
-void map_impl_erase/*@ <kt> @*/(int* busybits, void** keyps,
-                                int* k_hashes, int* chns,
-                                void* keyp,
-                                map_keys_equality* eq, int hash, int capacity,
-                                void** keyp_out)
+void map_impl_erase /*@ <kt> @*/ (int *busybits, void **keyps,
+                                  int *k_hashes, int *chns,
+                                  void *keyp,
+                                  map_keys_equality *eq, int hash, int capacity,
+                                  void **keyp_out)
 /*@ requires mapping<kt>(?m, ?addrs, ?kp, ?recp, ?hsh, capacity, busybits,
                          keyps, k_hashes, chns, ?values) &*&
              [0.5]kp(keyp, ?k) &*&
@@ -2611,13 +2612,13 @@ void map_impl_erase/*@ <kt> @*/(int* busybits, void** keyps,
 {
 
 #ifdef DUMP_PERF_VARS
-  int occupancy = map_impl_size(busybits,capacity);
-  NF_PERF_DEBUG("Map_impl_erase:%soccupancy:%d",perf_dump_prefix,occupancy);
-  int long_chain = longest_chain(chns,capacity);
-  NF_PERF_DEBUG("Map_impl_erase:Longest_chain%s:%d",perf_dump_suffix,long_chain);
-  int longest_cchain = longest_collision_chain(chns,k_hashes,busybits,capacity);
-  NF_PERF_DEBUG("Map_impl_erase:Longest_collison_chain%s:%d",perf_dump_suffix,longest_cchain);
-#endif 
+  int occupancy = map_impl_size(busybits, capacity);
+  NF_PERF_DEBUG("Map_impl_erase:%soccupancy:%d", perf_dump_prefix, occupancy);
+  int long_chain = longest_chain(chns, capacity);
+  NF_PERF_DEBUG("Map_impl_erase:Longest_chain%s:%d", perf_dump_suffix, long_chain);
+  int longest_cchain = longest_collision_chain(chns, k_hashes, busybits, capacity);
+  NF_PERF_DEBUG("Map_impl_erase:Longest_collison_chain%s:%d", perf_dump_suffix, longest_cchain);
+#endif
 
   //@ open mapping(m, addrs, kp, recp, hsh, capacity, busybits, keyps, k_hashes, chns, values);
   //@ open hmapping(kp, hsh, capacity, busybits, ?kps, k_hashes, ?hm);
@@ -2683,7 +2684,7 @@ void map_impl_erase/*@ <kt> @*/(int* busybits, void** keyps,
   }
   @*/
 
-int map_impl_size/*@ <kt> @*/(int* busybits, int capacity)
+int map_impl_size /*@ <kt> @*/ (int *busybits, int capacity)
 /*@ requires mapping<kt>(?m, ?addrs, ?kp, ?recp, ?hsh, capacity, busybits,
                          ?keyps, ?k_hashes, ?chns, ?values); @*/
 /*@ ensures mapping<kt>(m, addrs, kp, recp, hsh, capacity, busybits,
@@ -2699,7 +2700,7 @@ int map_impl_size/*@ <kt> @*/(int* busybits, int capacity)
   int s = 0;
   int i = 0;
   for (; i < capacity; ++i)
-    /*@ invariant 0 <= i &*& i <= capacity &*&
+  /*@ invariant 0 <= i &*& i <= capacity &*&
                   0 < capacity &*& 2*capacity < INT_MAX &*&
                   ints(busybits, capacity, bbs) &*&
                   pointers(keyps, capacity, kps) &*&
@@ -2711,7 +2712,7 @@ int map_impl_size/*@ <kt> @*/(int* busybits, int capacity)
                   count(take(i, bbs), nonzero) == s &*&
                   0 <= s &*& s <= i;
       @*/
-    //@ decreases capacity - i;
+  //@ decreases capacity - i;
   {
     //@ add_bit_to_nonzero_count(bbs, i, s);
     if (busybits[i] != 0)

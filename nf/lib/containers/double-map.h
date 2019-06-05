@@ -14,11 +14,11 @@
   dmap_pack_keys.
  */
 
-typedef void uq_value_copy/*@<K>(predicate (void*; K) vp, int size) @*/(char* dst, void* src);
+typedef void uq_value_copy /*@<K>(predicate (void*; K) vp, int size) @*/ (char *dst, void *src);
 //@ requires [?fr]vp(src, ?v) &*& dst[0..size] |-> _;
 //@ ensures [fr]vp(src, v) &*& vp(dst, v);
 
-typedef void dmap_extract_keys/*@ <K1,K2,V>
+typedef void dmap_extract_keys /*@ <K1,K2,V>
                                 (predicate (void*; K1) keyp1,
                                  predicate (void*; K2) keyp2,
                                  predicate (void*; V) full_valp,
@@ -28,7 +28,7 @@ typedef void dmap_extract_keys/*@ <K1,K2,V>
                                  fixpoint (V,K1) vk1,
                                  fixpoint (V,K2) vk2)
                               @*/
-                              (void* vp, void** kpp1, void** kpp2);
+    (void *vp, void **kpp1, void **kpp2);
 //@ requires [?fr]full_valp(vp, ?v) &*& *kpp1 |-> _ &*& *kpp2 |-> _;
 /*@ ensures [fr]bare_valp(vp, v) &*& *kpp1 |-> ?kp1 &*& *kpp2 |-> ?kp2 &*&
             [fr]keyp1(kp1, ?k1) &*& [fr]keyp2(kp2, ?k2) &*&
@@ -38,7 +38,7 @@ typedef void dmap_extract_keys/*@ <K1,K2,V>
 
 //TODO: replace with pack key halves first and second,
 // because it is called two times
-typedef void dmap_pack_keys/*@ <K1,K2,V>
+typedef void dmap_pack_keys /*@ <K1,K2,V>
                              (predicate (void*; K1) keyp1,
                               predicate (void*; K2) keyp2,
                               predicate (void*; V) full_valp,
@@ -48,21 +48,20 @@ typedef void dmap_pack_keys/*@ <K1,K2,V>
                               fixpoint (V,K1) vk1,
                               fixpoint (V,K2) vk2)
                            @*/
-                           (void* vp, void* kp1, void* kp2);
+    (void *vp, void *kp1, void *kp2);
 /*@ requires [?fr]bare_valp(vp, ?v) &*& [fr]keyp1(kp1, ?k1) &*& [fr]keyp2(kp2, ?k2) &*&
              true == right_offsets(vp, kp1, kp2) &*&
              k1 == vk1(v) &*&
              k2 == vk2(v); @*/
 //@ ensures [fr]full_valp(vp, v);
 
-typedef void uq_value_destr/*@ <V>
+typedef void uq_value_destr /*@ <V>
                              (predicate (void*; V) full_valp,
                               int val_size)
                              @*/
-                           (void* vp);
+    (void *vp);
 /*@ requires full_valp(vp, _); @*/
 /*@ ensures chars(vp, val_size, _); @*/
-
 
 struct DoubleMap;
 
@@ -459,7 +458,6 @@ struct DoubleMap;
   ensures dmap_cap_fp(dmap_put_fp(m, index, v, vk1, vk2)) == dmap_cap_fp(m);
   @*/
 
-
 /*@
   lemma void dmap_erase_keeps_cap<t1,t2,vt>(dmap<t1,t2,vt> m,
                                             int idx,
@@ -560,16 +558,15 @@ struct DoubleMap;
    @param map_out - output pointer to the allocated map
    @returns 1 if the map is successfully allocated, 0 otherwise.
  */
-int dmap_allocate/*@ <K1,K2,V> @*/
-                 (map_keys_equality* eq_a, map_key_hash* hsh_a,
-                  map_keys_equality* eq_b, map_key_hash* hsh_b,
-                  int value_size, uq_value_copy* v_cpy,
-                  uq_value_destr* v_destr,
-                  dmap_extract_keys* dexk,
-                  dmap_pack_keys* dpk,
-                  int capacity,
-                  int keys_capacity,
-                  struct DoubleMap** map_out);
+int dmap_allocate /*@ <K1,K2,V> @*/
+    (map_keys_equality *eq_a, map_key_hash *hsh_a,
+     map_keys_equality *eq_b, map_key_hash *hsh_b,
+     int value_size, uq_value_copy *v_cpy,
+     uq_value_destr *v_destr,
+     dmap_extract_keys *dexk,
+     dmap_pack_keys *dpk,
+     int capacity,
+     struct DoubleMap **map_out);
 /*@ requires dmap_key_val_types<K1,K2,V>(_, _, _) &*&
              [_]is_map_keys_equality<K1>(eq_a, ?keyp1) &*&
              [_]is_map_key_hash<K1>(hsh_a, keyp1, ?hsh1) &*&
@@ -603,7 +600,7 @@ int dmap_allocate/*@ <K1,K2,V> @*/
    @param index - output pointer to the index of the entry by the key A.
    @returns 1 if the entry is found, 0 otherwise.
  */
-int dmap_get_a/*@ <K1,K2,V> @*/(struct DoubleMap* map, void* key, int* index);
+int dmap_get_a /*@ <K1,K2,V> @*/ (struct DoubleMap *map, void *key, int *index);
 /*@ requires dmappingp<K1,K2,V>(?m, ?kp1, ?kp2, ?hsh1, ?hsh2,
                                 ?fvp, ?bvp, ?rof, ?vsz,
                                 ?vk1, ?vk2, ?rp1, ?rp2, map) &*&
@@ -628,7 +625,7 @@ int dmap_get_a/*@ <K1,K2,V> @*/(struct DoubleMap* map, void* key, int* index);
    @param index - output pointer to the index of the entry by the key B.
    @returns 1 if the entry is found, 0 otherwise.
 */
-int dmap_get_b/*@ <K1,K2,V> @*/(struct DoubleMap* map, void* key, int* index);
+int dmap_get_b /*@ <K1,K2,V> @*/ (struct DoubleMap *map, void *key, int *index);
 /*@ requires dmappingp<K1,K2,V>(?m, ?kp1, ?kp2, ?hsh1, ?hsh2,
                                 ?fvp, ?bvp, ?rof, ?vsz,
                                 ?vk1, ?vk2, ?rp1, ?rp2, map) &*&
@@ -655,7 +652,7 @@ int dmap_get_b/*@ <K1,K2,V> @*/(struct DoubleMap* map, void* key, int* index);
    @param index - a unique index, 0 <= index < map_capacity.
    @returns 1.
  */
-int dmap_put/*@ <K1,K2,V> @*/(struct DoubleMap* map, void* value, int index);
+int dmap_put /*@ <K1,K2,V> @*/ (struct DoubleMap *map, void *value, int index);
 /*@ requires dmappingp<K1,K2,V>(?m, ?kp1, ?kp2, ?hsh1, ?hsh2,
                                 ?fvp, ?bvp, ?rof, ?vsz,
                                 ?vk1, ?vk2, ?rp1, ?rp2, map) &*&
@@ -682,8 +679,8 @@ int dmap_put/*@ <K1,K2,V> @*/(struct DoubleMap* map, void* value, int index);
    @param valut_out - the preallocated memory chunk, to hold the copy of the
                       value.
  */
-void dmap_get_value/*@ <K1,K2,V> @*/(struct DoubleMap* map, int index,
-                                     void* value_out);
+void dmap_get_value /*@ <K1,K2,V> @*/ (struct DoubleMap *map, int index,
+                                       void *value_out);
 /*@ requires dmappingp<K1,K2,V>(?m, ?kp1, ?kp2, ?hsh1, ?hsh2,
                                 ?fvp, ?bvp, ?rof, ?vsz,
                                 ?vk1, ?vk2, ?rp1, ?rp2, map) &*&
@@ -703,7 +700,7 @@ void dmap_get_value/*@ <K1,K2,V> @*/(struct DoubleMap* map, int index,
    @param index - the internal index, known to be used by the map.
    @returns 1.
  */
-int dmap_erase/*@ <K1,K2,V> @*/(struct DoubleMap* map, int index);
+int dmap_erase /*@ <K1,K2,V> @*/ (struct DoubleMap *map, int index);
 /*@ requires dmappingp<K1,K2,V>(?m, ?kp1, ?kp2, ?hsh1, ?hsh2,
                                 ?fvp, ?bvp, ?rof, ?vsz,
                                 ?vk1, ?vk2, ?rp1, ?rp2, map) &*&
@@ -721,7 +718,7 @@ int dmap_erase/*@ <K1,K2,V> @*/(struct DoubleMap* map, int index);
    @param map - pointer to the hash table.
    @returns the number of entries in the table.
  */
-int dmap_size/*@ <K1,K2,V> @*/(struct DoubleMap* map);
+int dmap_size /*@ <K1,K2,V> @*/ (struct DoubleMap *map);
 /*@ requires dmappingp<K1,K2,V>(?m, ?kp1, ?kp2, ?hsh1, ?hsh2,
                                 ?fvp, ?bvp, ?rof, ?vsz,
                                 ?vk1, ?vk2, ?rp1, ?rp2, map); @*/

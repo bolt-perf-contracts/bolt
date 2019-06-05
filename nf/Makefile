@@ -32,17 +32,17 @@ SRCS-y := $(SELF_DIR)/nf_main.c \
           $(SELF_DIR)/lib/expirator.c \
           $(SELF_DIR)/lib/containers/vector.c \
           $(SELF_DIR)/router/router_options.c \
-          $(SELF_DIR)/lib/stubs/dpdk_mempool_singleton.c
+
 # NF specific source
 SRCS-y += $(NF_FILES)
 
+# For DS designed for performance predictability
+#CFLAGS += -DPRED_DS
+#SRCS-y += $(SELF_DIR)/lib/containers/pred-map.c $(SELF_DIR)/lib/containers/pred-map-impl.c $(SELF_DIR)/lib/containers/pred-double-map.c 
 
-# VERIFIED MAP
+# VERIFIED MAP - This is "Unpredictable"
 SRCS-y += $(SELF_DIR)/lib/containers/map.c $(SELF_DIR)/lib/containers/map-impl.c $(SELF_DIR)/lib/containers/double-map.c
-# DUPLICATE OF THE MAP - for bolt, from Russia with love
-SRCS-y += $(SELF_DIR)/lib/containers/map2.c
-# USE AND IN VERIFIED MAP
-CFLAGS += -DUSE_AND_FOR_HASH
+
 # SOLAL MAP
 #SRCS-y += $(SELF_DIR)/lib/containers/map-buckets.c $(SELF_DIR)/lib/containers/double-map-using-map.c
 # DPDK MAP
@@ -53,14 +53,14 @@ CFLAGS += -DUSE_AND_FOR_HASH
 # NULL MAP
 #SRCS-y += $(SELF_DIR)/lib/containers/map-null.c $(SELF_DIR)/lib/containers/double-map-using-map.c
 
-# printf the performance counters
-#CFLAGS += -DDUMP_PERF
+#printf the performance counters
+#CFLAGS += -DDUMP_LATENCY
+#CFLAGS += -DDUMP_TPUT
 #CFLAGS += -DDUMP_PERF_VARS
-
+#CFLAGS += -DDUMP_PERF_CTRS
+ 
 # VERIFIED DCHAIN
 SRCS-y +=  $(SELF_DIR)/lib/containers/double-chain.c $(SELF_DIR)/lib/containers/double-chain-impl.c
-# DUPLICATE DCHAIN - as Bolt does not support 2 instances of the same DS
-SRCS-y +=  $(SELF_DIR)/lib/containers/double-chain2.c 
 # RISHABH DCHAIN
 #SRCS-y += $(SELF_DIR)/lib/containers/alternate-double-chain.c
 
@@ -68,13 +68,16 @@ SRCS-y +=  $(SELF_DIR)/lib/containers/double-chain2.c
 SRCS-y +=  $(SELF_DIR)/lpm/lpm_dpdk.c
 
 # compiler flags
-CFLAGS += -I $(SELF_DIR) -DNO_STATIC_MAPPING $(ADDITIONAL_FLAGS)
+CFLAGS += -I $(SELF_DIR) -I $(PAPI_SRC) -DNO_STATIC_MAPPING $(ADDITIONAL_FLAGS)
 CFLAGS += -std=gnu99
 CFLAGS += -O2 -g
 #CFLAGS += -O0 -g -rdynamic -Wfatal-errors
 
 # For nanosecond timestamps
-CFLAGS += -DNSEC_TIMESTAMPS
+#CFLAGS += -DNSEC_TIMESTAMPS
+
+# Linker flags
+LDFLAGS += $(PAPI_SRC)/libpapi.a
 
 # DPDK stuff
 include $(RTE_SDK)/mk/rte.extapp.mk
@@ -107,8 +110,7 @@ VERIF_FLAGS := -c -g -emit-llvm -fsanitize=signed-integer-overflow $(REPLAY) -DN
 #VERIF_FLAGS += -DFULLY_SYMBOLIC_BUF
 
 # Klee-runtime executable compilation flags. Replay is unconditional here.
-EXEC_FLAGS := -c -g -O2 -DREPLAY -DNO_STATIC_MAPPING -DVIGOR_EXECUTABLE
-
+EXEC_FLAGS := -c -g -O2 -std=c99 -DREPLAY -DNO_STATIC_MAPPING -DVIGOR_EXECUTABLE
 # Basic includes: NF root and KLEE
 VERIF_INCLUDES := -I $(SELF_DIR) -I $(KLEE_INCLUDE)
 # ...and the DPDK cmdline library
@@ -125,10 +127,9 @@ VERIF_FILES := $(SELF_DIR)/nf_main.c $(SELF_DIR)/lib/nf_util.c
 # Specific NF
 VERIF_FILES += $(NF_FILES)
 # NF base stubs
-VERIF_FILES += ../lib/stubs/containers/map-stub.c ../lib/stubs/containers/map-stub2.c \
+VERIF_FILES += ../lib/stubs/containers/map-stub.c \
                ../lib/stubs/containers/double-map-stub.c \
                ../lib/stubs/containers/double-chain-stub.c \
-               ../lib/stubs/containers/double-chain-stub2.c \
                ../lib/stubs/containers/vector-stub.c \
                ../lib/stubs/containers/expirator-stub.c \
                ../router/router_options_stub.c \
@@ -164,10 +165,10 @@ VERIF_DPDK_INCLUDES += --include=lib/stubs/builtin_stub.h --include=rte_config.h
 # Files for DPDK
 # Low-level stubs for specific functions
 VERIF_DPDK_FILES := ../lib/stubs/dpdk_low_level_stub.c
-# Replacement for the mempool containr
-VERIF_DPDK_FILES += ../lib/stubs/dpdk_mempool_singleton.c
 # Platform-independent and Linux-specific EAL
 VERIF_DPDK_FILES += $(RTE_SDK)/lib/librte_eal/common/*.c $(RTE_SDK)/lib/librte_eal/linuxapp/eal/*.c
+# Default ring mempool driver
+VERIF_DPDK_FILES += $(RTE_SDK)/drivers/mempool/ring/rte_mempool_ring.c
 # Other libraries, except acl and distributor which use CPU intrinsics (there is a generic version of distributor, but we don't need it),
 # and power has been broken for a while: http://dpdk.org/ml/archives/dev/2016-February/033152.html
 VERIF_DPDK_FILES += $(RTE_SDK)/lib/!(librte_acl|librte_distributor|librte_power)/*.c
@@ -191,7 +192,6 @@ VERIF_COMMAND := /usr/bin/time -v \
                  klee -libc=uclibc -no-externals -dump-call-traces -dump-call-trace-prefixes -solver-backend=z3 -exit-on-error -max-memory=750000 -search=dfs -condone-undeclared-havocs
 # NF args for the verification
 NF_VERIF_BASE_ARGS := nf.bc --no-shconf --
-
 
 verify-dpdk:
 	$(CLEAN_COMMAND)
@@ -416,7 +416,7 @@ executable-firewall-hardware:
 		nf_main.o firewall.o nf_util.o nat_config.o\
 	        hardware_stub.o \
 		dpdk_mempool_singleton.o \
-	        double-chain-stub.o double-chain-stub2.o expirator-stub.o double-map-stub.o \
+	        double-chain-stub.o expirator-stub.o double-map-stub.o \
 	        cmdline_socket.o cmdline.o cmdline_cirbuf.o cmdline_parse.o cmdline_parse_*.o cmdline_rdline.o cmdline_vt100.o \
 	        core_stub.o \
 	        time_stub.o time.o timerfd.o \
@@ -508,8 +508,8 @@ executable-vigbalancer-hardware:
 	        nf_util.o nf_main.o lb_main.o lb_balancer.o lb_config.o lb_data.o lb_loop.o \
 	        hardware_stub.o \
 		dpdk_mempool_singleton.o \
-	        double-chain-stub.o double-chain-stub2.o expirator-stub.o double-map-stub.o \
-		map-stub.o map-stub2.o vector-stub.o \
+	        double-chain-stub.o expirator-stub.o double-map-stub.o \
+		map-stub.o vector-stub.o \
 	        cmdline_socket.o cmdline.o cmdline_cirbuf.o cmdline_parse.o cmdline_parse_*.o cmdline_rdline.o cmdline_vt100.o \
 	        core_stub.o \
 	        time_stub.o time.o timerfd.o \
@@ -537,8 +537,8 @@ executable-vigbalancer:
 	 gcc -o executable \
 	 	nf_main.o nf_util.o lb_main.o lb_balancer.o \
 	 	lb_config.o lb_data.o lb_loop.o \
-	        double-chain-stub.o double-chain-stub2.o expirator-stub.o double-map-stub.o \
-		map-stub.o map-stub2.o vector-stub.o \
+	        double-chain-stub.o expirator-stub.o double-map-stub.o \
+		map-stub.o vector-stub.o \
 	  cmdline_socket.o cmdline.o cmdline_cirbuf.o cmdline_parse.o cmdline_parse_*.o cmdline_rdline.o cmdline_vt100.o \
 	  core_stub.o \
 	 	time_stub.o time.o timerfd.o \

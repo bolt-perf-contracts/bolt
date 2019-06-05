@@ -124,10 +124,10 @@ VOID trace_after(ADDRINT ret)
 
 VOID Image(IMG img, VOID* v)
 {
-	RTN processRtn = RTN_FindByName(img, "map_get");
+	RTN processRtn = RTN_FindByName(img, "nf_core_process");
 	if (RTN_Valid(processRtn)) {
 		RTN_Open(processRtn);
-		RTN_InsertCall(processRtn, IPOINT_BEFORE, (AFUNPTR) trace_before, IARG_ADDRINT, "map_get", IARG_FUNCARG_ENTRYPOINT_VALUE, 0, IARG_END);
+		RTN_InsertCall(processRtn, IPOINT_BEFORE, (AFUNPTR) trace_before, IARG_ADDRINT, "nf_core_process", IARG_FUNCARG_ENTRYPOINT_VALUE, 0, IARG_END);
 		RTN_InsertCall(processRtn, IPOINT_AFTER, (AFUNPTR) trace_after, IARG_FUNCRET_EXITPOINT_VALUE, IARG_END);
 		RTN_Close(processRtn);
 	} 

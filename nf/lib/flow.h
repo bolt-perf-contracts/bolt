@@ -12,7 +12,8 @@ uint16_t GLOBAL_starting_port;
   Used in a hash map to identify flows for packets coming from the internal
   network.
 */
-struct int_key {
+struct int_key
+{
   uint16_t int_src_port;
   uint16_t dst_port;
   uint32_t int_src_ip;
@@ -26,7 +27,8 @@ struct int_key {
   Used in a hash map to identify flows for packets coming from the external
   network.
 */
-struct ext_key {
+struct ext_key
+{
   uint16_t ext_src_port;
   uint16_t dst_port;
   uint32_t ext_src_ip;
@@ -40,10 +42,11 @@ struct ext_key {
   of a flow: the internal and the external. This structure helps NAT to
   translate between internal and external 5-tuples.
  */
-struct flow {
+struct flow
+{
   // This incapsulation simplifies memory management, but may hurt locality.
-  struct int_key ik;//2.5x redundancy.
-  struct ext_key ek;//Can be optimized, but we do not wont that mess.
+  struct int_key ik; //2.5x redundancy.
+  struct ext_key ek; //Can be optimized, but we do not wont that mess.
   uint16_t int_src_port;
   uint16_t ext_src_port;
   uint16_t dst_port;
@@ -78,10 +81,10 @@ extern struct str_field_descr ext_key_descrs[6];
 extern struct nested_field_descr flow_nests[12];
 extern struct str_field_descr flow_descrs[11];
 
-int flow_consistency(void* key_a, void* key_b,
-                     int index, void* value);
+int flow_consistency(void *key_a, void *key_b,
+                     int index, void *value);
 
-#endif//KLEE_VERIFICATION
+#endif //KLEE_VERIFICATION
 
 /*@
   inductive int_k = ikc(int, int, int, int, int, int);
@@ -250,7 +253,7 @@ int flow_consistency(void* key_a, void* key_b,
   @param b - pointer to second int_key
   @returns 1 if *a equals *b; and 1 otherwise.
 */
-bool int_key_eq(void* a, void* b);
+bool int_key_eq(void *a, void *b);
 //@ requires [?f1]int_k_p(a, ?ak) &*& [?f2]int_k_p(b, ?bk);
 //@ ensures [f1]int_k_p(a, ak) &*& [f2]int_k_p(b, bk) &*& (false == result ? (ak != bk) : (ak == bk));
 
@@ -261,10 +264,9 @@ bool int_key_eq(void* a, void* b);
   @param b - pointer to second ext_key
   @returns 1 if *a equals *b; and 1 otherwise.
 */
-bool ext_key_eq(void* a, void* b);
+bool ext_key_eq(void *a, void *b);
 //@ requires [?f1]ext_k_p(a, ?ak) &*& [?f2]ext_k_p(b, ?bk);
 //@ ensures [f1]ext_k_p(a, ak) &*& [f2]ext_k_p(b, bk) &*& (false == result ? (ak != bk) : (ak == bk));
-
 
 /**
   Hash function for int_key's.
@@ -274,7 +276,7 @@ bool ext_key_eq(void* a, void* b);
   @returns integer - a hash computed for *ik. For equal keys the hash values are
   guaranteed to be equal.
 */
-int int_key_hash(void* ik);
+int int_key_hash(void *ik);
 //@ requires [?f]int_k_p(ik, ?k);
 //@ ensures [f]int_k_p(ik, k) &*& result == int_hash(k);
 
@@ -286,7 +288,7 @@ int int_key_hash(void* ik);
    @returns integer - a hash computed for *ek. For equal keys the hash values are
    guaranteed to be equal.
 */
-int ext_key_hash(void* ek);
+int ext_key_hash(void *ek);
 //@ requires [?f]ext_k_p(ek, ?k);
 //@ ensures [f]ext_k_p(ek, k) &*& result == ext_hash(k);
 
@@ -297,7 +299,7 @@ int ext_key_hash(void* ek);
 
    @param flwp - pointer to the flow to be destroyed.
 */
-void flow_destroy(void* flwp);
+void flow_destroy(void *flwp);
 //@ requires flw_p(flwp, ?flw);
 //@ ensures chars(flwp, sizeof(struct flow), _);
 
@@ -309,7 +311,7 @@ void flow_destroy(void* flwp);
    @param ikpp - the output pointer for the internal key extracted from the flow.
    @param ekpp - the output pointer for the external key extracted from the flow.
 */
-void flow_extract_keys(void* flwp, void** ikpp, void** ekpp);
+void flow_extract_keys(void *flwp, void **ikpp, void **ekpp);
 //@ requires [?f]flw_p(flwp, ?flw) &*& *ikpp |-> _ &*& *ekpp |-> _;
 /*@ ensures [f]flow_p(flwp, flw) &*& *ikpp |-> ?ikp &*& *ekpp |-> ?ekp &*&
             [f]int_k_p(ikp, ?ik) &*& [f]ext_k_p(ekp, ?ek) &*&
@@ -326,7 +328,7 @@ void flow_extract_keys(void* flwp, void** ikpp, void** ekpp);
    @param ekp - pointer to the external key, must be the one extracted
                 previously.
 */
-void flow_pack_keys(void* flwp, void* ikp, void* ekp);
+void flow_pack_keys(void *flwp, void *ikp, void *ekp);
 /*@ requires [?f]flow_p(flwp, ?flw) &*&
              [f]int_k_p(ikp, ?ik) &*& [f]ext_k_p(ekp, ?ek) &*&
              true == flow_keys_offsets_fp(flwp, ikp, ekp) &*&
@@ -341,7 +343,7 @@ void flow_pack_keys(void* flwp, void* ikp, void* ekp);
                 a preallocated sufficient memory chunk.
    @param src - the flow to be copied.
 */
-void flow_cpy(char* dst, void* src);
+void flow_cpy(char *dst, void *src);
 //@ requires [?fr]flw_p(src, ?f) &*& dst[0..sizeof(struct flow)] |-> _;
 //@ ensures [fr]flw_p(src, f) &*& flw_p((void*)dst, f);
 

@@ -1,10 +1,5 @@
-// GNU_SOURCE for CPU_* (TODO define here, not on compile line)
-//#define _GNU_SOURCE
 #include <sched.h>
-//#undef _GNU_SOURCE
-
 #include <stdlib.h>
-
 #include <pthread.h>
 
 #include <klee/klee.h>

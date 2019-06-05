@@ -1,4 +1,4 @@
- This folder contains patches and configuration files for dependencies of the Vigor toolchain, namely:
+ This folder contains patches and configuration files for dependencies of the Bolt toolchain, namely:
 - DPDK patches
   - `bugfixes` fixes bugs found in DPDK (all reported)
   - `clean` contains minor cleanups that do not affect correctness, only ease of verification

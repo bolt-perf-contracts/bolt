@@ -97,10 +97,6 @@ stub_device_start(struct stub_device* dev)
 	uint32_t rdt = DEV_REG(dev, 0x01018);
 	klee_assert(rdt >= 1);
 
-	if (klee_int("received") == 0) {
-		// no packet
-	}
-
 	// Descriptor is 128 bits, see page 313, table 7-15 "Descriptor Read Format"
 	// (which the NIC reads to know where to put a packet)
 	// and page 314, table 7-16 "Descriptor Write-Back Format"
@@ -116,6 +112,23 @@ stub_device_start(struct stub_device* dev)
 	klee_assert(head_addr == 0);
 
 	dev->old_mbuf_addr = mbuf_addr;
+
+	bool received = klee_int("received");
+	set_packet_receive_success(received);
+	//need it forward, to make sure packet_receive args are the same in both calls
+	uint32_t packet_len = sizeof(struct stub_mbuf_content); //TODO: make length symbolic
+	//uint32_t data_len = klee_int("data_len");
+	//klee_assume(packet_len <= 90); //Make sure it fits 1 mbuf
+	//klee_assume(data_len <= packet_len);
+	//klee_assume(sizeof(struct ether_hdr) <= data_len);
+	uint32_t data_len = packet_len;
+	if (!received) {
+		// no packet
+		bool received_a_packet = packet_receive(device_index, (void**)&mbuf_addr, &data_len);
+		klee_assert(!received_a_packet);
+		return;
+	}
+
 
 	// Write phase
 
@@ -218,8 +231,12 @@ stub_device_start(struct stub_device* dev)
 	uint64_t wb1 = 0b0000000000000000000000000000000000000000000000000000000000000011;
 
 	// get packet length
+<<<<<<< HEAD
 	uint16_t packet_length = sizeof(struct stub_mbuf_content);
 	wb1 |= (uint64_t) packet_length << 32;
+=======
+	wb1 |= (uint64_t) packet_len << 32;
+>>>>>>> 5471336... [CHANGES DPDK PATCHES] Remove need for dpdk_mempool_singleton.
 
 	if (is_ipv4 && (
 			// Multicast addr?
@@ -245,7 +262,7 @@ stub_device_start(struct stub_device* dev)
 
 
 	// Write the packet into the proper place
-	memcpy((void*) mbuf_addr, mbuf_content, packet_length);
+	memcpy((void*) mbuf_addr, mbuf_content, packet_len);
 
 	// "The 82599 writes back the receive descriptor immediately following the packet write into system memory."
 	descr[0] = wb0;

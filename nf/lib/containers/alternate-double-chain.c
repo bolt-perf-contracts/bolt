@@ -29,35 +29,19 @@ int dchain_get_free_index(struct DoubleChain* chain)
 	int index_range = chain->capacity;
 
 #ifdef DUMP_PERF_VARS
-<<<<<<< HEAD
 	int traversals=0;	
 #endif
-
-=======
-        int traversals=0;
-#endif
->>>>>>> 4967e768a040830d9250657f1caf171314f25375
 	for(int i= start;i<start+index_range;i++)
 	{
 		res = i & (index_range-1);
 
 #ifdef DUMP_PERF_VARS
-<<<<<<< HEAD
-       		traversals++;
-#endif
-		if(chain->cells[i].busy == 0)
-		{
-
-#ifdef DUMP_PERF_VARS
-                	NF_PERF_DEBUG("Dchain_get_free_index:Success:Num_port_traversals:%d",traversals);
-=======
                 traversals++;
 #endif
 		if(chain->cells[i].busy == 0)
 		{
 #ifdef DUMP_PERF_VARS
                         NF_PERF_DEBUG("Dchain_get_free_index:Success:Num_port_traversals:%d",traversals);
->>>>>>> 4967e768a040830d9250657f1caf171314f25375
 #endif
 			return i;
 		}

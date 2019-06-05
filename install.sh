@@ -175,17 +175,6 @@ pushd "$BUILDDIR/z3"
   popd
 popd
 
-
-### VeriFast
-
-git clone --depth 1 --branch export_path_conditions https://github.com/vignat/verifast "$BUILDDIR/verifast"
-pushd "$BUILDDIR/verifast/src"
-  make verifast # should be just "make" but the verifast checks fail due to a non auto lemma
-  echo 'PATH='"$BUILDDIR/verifast/bin"':$PATH' >> "$PATHSFILE"
-  . "$PATHSFILE"
-popd
-
-
 ### KLEE
 
 svn co https://llvm.org/svn/llvm-project/llvm/tags/RELEASE_342/final "$BUILDDIR/llvm"
@@ -237,4 +226,17 @@ pushd "$BUILDDIR/klee"
     echo "export KLEE_INCLUDE=$BUILDDIR/klee/include" >> "$PATHSFILE"
     . "$PATHSFILE"
   popd
+  pushd trace-instructions
+    make clean && make 
+  popd
 popd
+
+### PIN
+PIN_RELEASE='3.7-97619-g0d0c92f4f'
+wget -O pin.tar.gz "https://software.intel.com/sites/landingpage/pintool/downloads/pin-$PIN_RELEASE-gcc-linux.tar.gz"
+tar xf pin.tar.gz
+mv pin-$PIN_RELEASE-gcc-linux pin
+rm pin.tar.gz
+echo 'PATH='"$BUILDDIR/pin"':$PATH' >> "$PATHSFILE"
+
+

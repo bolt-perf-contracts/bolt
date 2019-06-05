@@ -26,6 +26,7 @@ MB_MAC_TO_SRV=90:e2:ba:55:12:5c
 MB_IP_INTERNAL=192.168.6.2
 MB_IP_EXTERNAL=192.168.4.2
 MB_IP_TO_SRV=192.168.150.2
+MB_IPS_BACKENDS="192.168.4.3 192.168.4.4 192.168.4.5 192.168.4.6"
 
 MB_DEVICE_INTERNAL=p802p2
 MB_DEVICE_EXTERNAL=p802p1
@@ -63,5 +64,12 @@ SERVER_DEVICE=p801p1
 
 # Other
 
-export RTE_SDK=$HOME/dpdk
+CASE_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}")"/../../../../  >/dev/null && pwd )"
+
+# Fix the case root folder for the tester, where it should be just home
+if [ "${CASE_ROOT##/home/}" == "${CASE_ROOT}" ]; then
+  CASE_ROOT=$HOME
+fi
+
+export RTE_SDK=$CASE_ROOT/dpdk
 export RTE_TARGET=x86_64-native-linuxapp-gcc

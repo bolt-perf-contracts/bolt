@@ -18,7 +18,6 @@
   }
   @*/
 
-
 /* @
   lemma void erase_nothing<K1,K2,V>(dmap<K1,K2,V> m)
   requires true;
@@ -29,9 +28,9 @@
   }
   @*/
 
-int expire_items/*@<K1,K2,V> @*/(struct DoubleChain* chain,
-                                 struct DoubleMap* map,
-                                 time_t time)
+int expire_items /*@<K1,K2,V> @*/ (struct DoubleChain *chain,
+                                   struct DoubleMap *map,
+                                   time_t time)
 /*@ requires dmappingp<K1,K2,V>(?m, ?kp1, ?kp2, ?hsh1, ?hsh2,
                                 ?fvp, ?bvp, ?rof, ?vsz,
                                 ?vk1, ?vk2, ?rp1, ?rp2, map) &*&
@@ -58,7 +57,7 @@ int expire_items/*@<K1,K2,V> @*/(struct DoubleChain* chain,
   //@ dchain_expired_indexes_limited(ch, time);
   //@ double_chain_nodups(ch);
   while (dchain_expire_one_index(chain, &index, time))
-    /*@ invariant double_chainp(expire_n_indexes(ch, time, count), chain) &*&
+  /*@ invariant double_chainp(expire_n_indexes(ch, time, count), chain) &*&
                   dchain_is_sortedp(ch) &*&
                   dmappingp(dmap_erase_all_fp
                               (m, take(count, dchain_get_expired_indexes_fp
@@ -106,9 +105,9 @@ int expire_items/*@<K1,K2,V> @*/(struct DoubleChain* chain,
   //@ assert take(count, dchain_get_expired_indexes_fp(ch, time)) == dchain_get_expired_indexes_fp(ch, time);
 
 #ifdef DUMP_PERF_VARS
-  NF_PERF_DEBUG("Expire_items:Success:Expired flows:%d",count);
+  NF_PERF_DEBUG("Expire_items:Success:Expired flows:%d", count);
 #endif
-  
+
   return count;
   //@ destroy_dchain_is_sortedp(ch);
   //@ destroy_dchain_nodups(expire_n_indexes(ch, time, count));
@@ -123,10 +122,10 @@ int expire_items/*@<K1,K2,V> @*/(struct DoubleChain* chain,
   }
   @*/
 
-int expire_items_single_map/*@ <kt> @*/(struct DoubleChain* chain,
-                                        struct Vector* vector,
-                                        struct Map* map,
-                                        time_t time)
+int expire_items_single_map /*@ <kt> @*/ (struct DoubleChain *chain,
+                                          struct Vector *vector,
+                                          struct Map *map,
+                                          time_t time)
 /*@ requires mapp<kt>(map, ?kp, ?hsh, ?recp, mapc(?cap, ?m, ?addrs)) &*&
              vectorp<kt>(vector, kp, ?v, ?vaddrs) &*&
              true == forall2(v, vaddrs, (kkeeper)(addrs)) &*&
@@ -158,7 +157,7 @@ int expire_items_single_map/*@ <kt> @*/(struct DoubleChain* chain,
   //@ list<pair<kt, void*> > cur_addrs = addrs;
   //@ list<pair<kt, bool> > cur_v = v;
   while (dchain_expire_one_index(chain, &index, time))
-    /*@ invariant double_chainp(cur_ch, chain) &*&
+  /*@ invariant double_chainp(cur_ch, chain) &*&
                   dchain_is_sortedp(ch) &*&
                   cur_ch == expire_n_indexes(ch, time, count) &*&
                   mapp<kt>(map, kp, hsh, recp,
@@ -190,7 +189,7 @@ int expire_items_single_map/*@ <kt> @*/(struct DoubleChain* chain,
       @*/
     //@ dchain_oldest_allocated(cur_ch);
     //@ mvc_coherent_index_busy(cur_m, cur_v, cur_ch, dchain_get_oldest_index_fp(cur_ch));
-    void* key;
+    void *key;
     vector_borrow_half(vector, index, &key);
     //@ assert *&key |-> ?key_pointer;
     //@ assert [_]kp(key_pointer, ?k);
@@ -226,31 +225,9 @@ int expire_items_single_map/*@ <kt> @*/(struct DoubleChain* chain,
   //@ vector_erase_all_same_len(v, take(count, dchain_get_expired_indexes_fp(ch, time)));
 
 #ifdef DUMP_PERF_VARS
-  NF_PERF_DEBUG("Expire_items:Success:Expired flows:%d",count);
+  NF_PERF_DEBUG("Expire_items:Success:Expired flows:%d", count);
 #endif
   return count;
   //@ destroy_dchain_is_sortedp(ch);
   //@ destroy_dchain_nodups(cur_ch);
-}
-
-int expire_items_single_map2/*@ <kt> @*/(struct DoubleChain* chain,
-                                         struct Vector* vector,
-                                         struct Map* map,
-                                         time_t time)
-{
-  int count = 0;
-  int index = -1;
-  while (dchain_expire_one_index(chain, &index, time))
-  {
-    void* key;
-    vector_borrow_half(vector, index, &key);
-    map_erase(map, key, &key);
-    vector_return_full(vector, index, key);
-    ++count;
-  }
-
-#ifdef DUMP_PERF_VARS
-  NF_PERF_DEBUG("Expire_items:Success:Expired flows:%d",count);
-#endif
-  return count;
 }

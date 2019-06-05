@@ -18,9 +18,9 @@
 
   @returns the number of expired flows.
  */
-int expire_items/*@<K1,K2,V> @*/(struct DoubleChain* chain,
-                                 struct DoubleMap* map,
-                                 time_t time);
+int expire_items /*@<K1,K2,V> @*/ (struct DoubleChain *chain,
+                                   struct DoubleMap *map,
+                                   time_t time);
 /*@ requires dmappingp<K1,K2,V>(?m, ?kp1, ?kp2, ?hsh1, ?hsh2,
                                 ?fvp, ?bvp, ?rof, ?vsz,
                                 ?vk1, ?vk2, ?rp1, ?rp2, map) &*&
@@ -38,34 +38,34 @@ int expire_items/*@<K1,K2,V> @*/(struct DoubleChain* chain,
             dmap_dchain_coherent<K1,K2,V>(nm, nch) &*&
             result == length(dchain_get_expired_indexes_fp(ch, time)); @*/
 
-typedef void entry_extract_key/*@ <kt,et> (predicate (void*;kt) kp,
+typedef void entry_extract_key /*@ <kt,et> (predicate (void*;kt) kp,
                                            predicate (void*;et) full_ep,
                                            predicate (void*,et) bare_ep,
                                            fixpoint (void*, void*, bool)
                                              right_offsets,
                                            fixpoint (et,kt) ek) @*/
-                           (void* entry, void** key);
+    (void *entry, void **key);
 /*@ requires [?fr]full_ep(entry, ?e) &*& *key |-> _; @*/
 /*@ ensures [fr]bare_ep(entry, e) &*& *key |-> ?nk &*&
             [fr]kp(nk, ek(e)) &*&
             true == right_offsets(entry, nk); @*/
 
-typedef void entry_pack_key/*@ <kt,et> (predicate (void*;kt) kp,
+typedef void entry_pack_key /*@ <kt,et> (predicate (void*;kt) kp,
                                         predicate (void*;et) full_ep,
                                         predicate (void*,et) bare_ep,
                                         fixpoint (void*, void*, bool)
                                           right_offsets,
                                         fixpoint (et,kt) ek) @*/
-                           (void* entry, void* key);
+    (void *entry, void *key);
 /*@ requires [?fr]bare_ep(entry, ?e) &*&
              [fr]kp(key, ek(e)) &*&
              true == right_offsets(entry, key); @*/
 /*@ ensures [fr]full_ep(entry, e); @*/
 
-int expire_items_single_map/*@ <kt> @*/(struct DoubleChain* chain,
-                                        struct Vector* vector,
-                                        struct Map* map,
-                                        time_t time);
+int expire_items_single_map /*@ <kt> @*/ (struct DoubleChain *chain,
+                                          struct Vector *vector,
+                                          struct Map *map,
+                                          time_t time);
 /*@ requires mapp<kt>(map, ?kp, ?hsh, ?recp, mapc(?cap, ?m, ?addrs)) &*&
              vectorp<kt>(vector, kp, ?v, ?vaddrs) &*&
              true == forall2(v, vaddrs, (kkeeper)(addrs)) &*&
@@ -83,8 +83,5 @@ int expire_items_single_map/*@ <kt> @*/(struct DoubleChain* chain,
             map_vec_chain_coherent<kt>(nm, nv, nch) &*&
             length(nv) == length(v) &*&
             result == length(dchain_get_expired_indexes_fp(ch, time)); @*/
-int expire_items_single_map2/*@ <kt> @*/(struct DoubleChain* chain,
-                                         struct Vector* vector,
-                                         struct Map* map,
-                                         time_t time);
+
 #endif //_EXPIRATOR_H_INCLUDED_

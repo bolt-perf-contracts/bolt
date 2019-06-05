@@ -1,18 +1,21 @@
-include $(RTE_SDK)/mk/rte.vars.mk
-
 # binary name
-APP = nat
+APP = nop
 
-# sources
-SRCS-y := nat_forward_nop.c ../nf_main.c ../lib/nat_config.c ../lib/nf_time.c ../lib/nf_util.c
+# Runtime and verification files
+NF_FILES := nat_forward_nop.c ../lib/nat_config.c \
 
-# gcc flags
-CFLAGS += -O3
-CFLAGS += -I.. -I../..
-CFLAGS += -std=gnu99
+# Verification files
+NF_VERIF_FILES := loop-stub.c
 
-# disable warnings triggered by DPDK
-CFLAGS += -Wno-implicit-function-declaration
-CFLAGS += -Wno-nested-externs
+# Verification arguments
+NF_VERIF_ARGS := --lan-dev 0 \
+                 --wan 1 \
+                 --expire 10 \
+                 --starting-port 0 \
+                 --max-flows 65536 \
+                 --extip 0.0.0.0 \
+                 --eth-dest 0,01:23:45:67:89:00 \
+                 --eth-dest 1,01:23:45:67:89:01
 
-include $(RTE_SDK)/mk/rte.extapp.mk
+# Include parent (in a convoluted way cause of DPDK)
+include $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/../Makefile

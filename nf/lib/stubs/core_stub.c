@@ -134,7 +134,7 @@ stub_core_trace_rx(struct rte_mbuf** mbuf)
 {
 	klee_trace_param_ptr(mbuf, sizeof(struct rte_mbuf*), "mbuf");
 	KLEE_TRACE_MBUF_EPTR(*mbuf, "incoming_package", TD_BOTH);
-	KLEE_TRACE_MBUF_CONTENT((*mbuf)->buf_addr, TD_BOTH);
+	//KLEE_TRACE_MBUF_CONTENT((*mbuf)->buf_addr, TD_BOTH);
 }
 
 uint8_t
@@ -142,7 +142,7 @@ stub_core_trace_tx(struct rte_mbuf* mbuf, uint16_t device)
 {
 	klee_trace_ret();
 	KLEE_TRACE_MBUF(mbuf, "mbuf", TD_BOTH);
-	KLEE_TRACE_MBUF_CONTENT(mbuf->buf_addr, TD_BOTH);
+	//KLEE_TRACE_MBUF_CONTENT(mbuf->buf_addr, TD_BOTH);
 	klee_trace_param_u16(device, "device");
 
 	if (klee_int("sent") == 0) {
