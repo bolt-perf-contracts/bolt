@@ -32,9 +32,6 @@ $ make
 $ ./build/nat
 
 # Running Bolt on VigNAT
-$ pushd ../../perf-contracts
-$ make
-$ popd
 $ bash ../test-bolt.sh vignat
 ```
 

@@ -25,6 +25,10 @@ if [ "$TEST" == "all" ]; then
 	make -j $(nproc) instr-traces
 fi
 
+pushd ../../perf-contracts
+    make clean && make
+popd 
+
 pushd klee-last
 	$KLEE_DIR/scripts/process-traces.sh . verify-dpdk Num_bucket_traversals 1 Num_hash_collisions 0  expired_flows 0 \
 		  timestamp_option 0 lpm_stages 1
