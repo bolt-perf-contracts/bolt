@@ -36,6 +36,8 @@ struct bridge_config config;
 struct StaticFilterTable static_ft;
 struct DynamicFilterTable dynamic_ft;
 
+enum TrafficClass NF_TRAFFIC_CLASS = UNDEFINED;
+
 int bridge_expire_entries(time_t time)
 {
   if (time < config.expiration_time)
@@ -74,9 +76,6 @@ int bridge_get_device(struct ether_addr *dst,
   {
     return device;
   }
-#ifdef KLEE_VERIFICATION
-  map_reset(dynamic_ft.map);
-#endif //KLEE_VERIFICATION
 
   int index = -1;
   hash = ether_addr_hash(dst);
@@ -86,12 +85,14 @@ int bridge_get_device(struct ether_addr *dst,
 #ifdef DUMP_PERF_VARS
     printf("Unicast\n");
 #endif
+    VIGOR_TAG(TRAFFIC_CLASS, KNOWN_DEST);
     struct DynamicValue *value = 0;
     vector_borrow_full(dynamic_ft.values, index, (void **)&value);
     device = value->device;
     vector_return_full(dynamic_ft.values, index, value);
     return device;
   }
+  VIGOR_TAG(TRAFFIC_CLASS, UNKNOWN_DEST);
   return -1;
 }
 
@@ -105,6 +106,7 @@ void bridge_put_update_entry(struct ether_addr *src,
   if (present)
   {
     dchain_rejuvenate_index(dynamic_ft.heap, index, time);
+    VIGOR_TAG(TRAFFIC_CLASS, KNOWN_SRC);
   }
   else
   {
@@ -114,6 +116,7 @@ void bridge_put_update_entry(struct ether_addr *src,
     if (!allocated)
     {
       NF_INFO("No more space in the dynamic table");
+      VIGOR_TAG(TRAFFIC_CLASS, UNKNOWN_SRC_FULL);
       return;
     }
     struct ether_addr *key = 0;
@@ -123,6 +126,7 @@ void bridge_put_update_entry(struct ether_addr *src,
     memcpy(key, src, sizeof(struct ether_addr));
     value->device = src_device;
     map_put(dynamic_ft.map, key, index);
+    VIGOR_TAG(TRAFFIC_CLASS, UNKNOWN_SRC);
     //the other half of the key is in the map
     vector_return_half(dynamic_ft.keys, index, key);
     vector_return_full(dynamic_ft.values, index, value);
@@ -145,28 +149,6 @@ void allocate_static_ft(int capacity)
     rte_exit(EXIT_FAILURE, "error allocating static array");
 }
 #ifdef KLEE_VERIFICATION
-
-struct str_field_descr static_map_key_fields[] = {
-    {offsetof(struct StaticKey, addr), sizeof(struct ether_addr), "addr"},
-    {offsetof(struct StaticKey, device), sizeof(uint16_t), "device"},
-};
-
-struct nested_field_descr static_map_key_nested_fields[] = {
-    {offsetof(struct StaticKey, addr), 0, sizeof(uint8_t), "a"},
-    {offsetof(struct StaticKey, addr), 1, sizeof(uint8_t), "b"},
-    {offsetof(struct StaticKey, addr), 2, sizeof(uint8_t), "c"},
-    {offsetof(struct StaticKey, addr), 3, sizeof(uint8_t), "d"},
-    {offsetof(struct StaticKey, addr), 4, sizeof(uint8_t), "e"},
-    {offsetof(struct StaticKey, addr), 5, sizeof(uint8_t), "f"},
-};
-
-struct str_field_descr dynamic_map_key_fields[] = {
-    {0, sizeof(uint8_t), "a"},
-    {1, sizeof(uint8_t), "b"},
-    {2, sizeof(uint8_t), "c"},
-    {3, sizeof(uint8_t), "d"},
-    {4, sizeof(uint8_t), "e"},
-    {5, sizeof(uint8_t), "f"}};
 
 struct str_field_descr dynamic_vector_key_fields[] = {
     {0, sizeof(uint8_t), "a"},
@@ -204,12 +186,8 @@ void read_static_ft_from_file()
 
   int static_capacity = klee_range(1, CAPACITY_UPPER_LIMIT, "static_capacity");
   allocate_static_ft(static_capacity);
-  map_set_layout(static_ft.map, static_map_key_fields,
-                 sizeof(static_map_key_fields) / sizeof(static_map_key_fields[0]),
-                 static_map_key_nested_fields,
-                 sizeof(static_map_key_nested_fields) /
-                     sizeof(static_map_key_nested_fields[0]),
-                 "StaticKey");
+  map_set_key_size(static_ft.map, sizeof(struct StaticKey));
+
   map_set_entry_condition(static_ft.map, stat_map_condition);
   vector_set_layout(static_ft.keys, static_map_key_fields,
                     sizeof(static_map_key_fields) /
@@ -381,9 +359,7 @@ void nf_core_init(void)
     rte_exit(EXIT_FAILURE, "error allocating heap");
 
 #ifdef KLEE_VERIFICATION
-  map_set_layout(dynamic_ft.map, dynamic_map_key_fields,
-                 sizeof(dynamic_map_key_fields) / sizeof(dynamic_map_key_fields[0]),
-                 NULL, 0, "ether_addr");
+  map_set_key_size(dynamic_ft.map, sizeof(struct ether_addr));
   vector_set_layout(dynamic_ft.keys,
                     dynamic_vector_key_fields,
                     sizeof(dynamic_vector_key_fields) /

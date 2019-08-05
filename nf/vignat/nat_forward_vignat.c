@@ -22,6 +22,8 @@
 struct nat_config config;
 struct FlowManager *flow_manager;
 
+enum TrafficClass NF_TRAFFIC_CLASS = UNDEFINED;
+
 void nf_core_init()
 {
 	flow_manager = allocate_flowmanager(

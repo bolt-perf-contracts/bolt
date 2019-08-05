@@ -125,32 +125,20 @@ int lb_backend_fields_number();
 
 enum TrafficClass
 {
-  UNDEFINED = 0,
-  HEARTBEAT = 1,
-  CLIENT_REQUEST = 2,
-  NEW_FLOW = 3,
-  NEW_FLOW_ALLOCATED = 4,
-  EXISTING_FLOW = 5,
-  FLOW_TO_EXP_BACKEND = 6,
-  FLOW_TO_GOOD_BACKEND = 7,
-  NEW_BACKEND = 8,
-  NEW_BACKEND_INSERTED = 9,
-  REJ_BACKEND = 10,
-  DROP_BACKEND = 11
+  UNDEFINED,
+  HEARTBEAT,
+  CLIENT_REQUEST,
+  NEW_FLOW,
+  NEW_FLOW_ALLOCATED,
+  EXISTING_FLOW,
+  FLOW_TO_EXP_BACKEND,
+  FLOW_TO_GOOD_BACKEND,
+  NEW_BACKEND_ALLOCATED,
+  BACKEND_TABLE_FULL,
+  KNOWN_BACKEND
 };
 
-extern enum TrafficClass TRAFFIC_CLASS;
+extern enum TrafficClass NF_TRAFFIC_CLASS;
 
-int __attribute__((noinline)) fun_HEARTBEAT();
-int __attribute__((noinline)) fun_CLIENT_REQUEST();
-int __attribute__((noinline)) fun_NEW_FLOW();
-int __attribute__((noinline)) fun_NEW_FLOW_ALLOCATED();
-int __attribute__((noinline)) fun_EXISTING_FLOW();
-int __attribute__((noinline)) fun_FLOW_TO_EXP_BACKEND();
-int __attribute__((noinline)) fun_FLOW_TO_GOOD_BACKEND();
-int __attribute__((noinline)) fun_NEW_BACKEND();
-int __attribute__((noinline)) fun_NEW_BACKEND_INSERTED();
-int __attribute__((noinline)) fun_REJ_BACKEND();
-int __attribute__((noinline)) fun_DROP_BACKEND();
 
 #endif // _LB_BALANCER_H_INCLUDED_

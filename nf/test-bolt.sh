@@ -6,16 +6,16 @@ set -e
 NF=$1
 TEST=${2:-all}
 
-if [ $NF != "vignat" ] && [ $NF != "bridge" ] && [ $NF != "vigbalancer" ]; then
+if [ "$NF" != "vignat" ] && [ "$NF" != "bridge" ] && [ "$NF" != "vigbalancer" ]; then
   echo "Unsupported parameter"
-	echo $TEST
+  echo $TEST
   exit
 fi
 
 
 if [ "$TEST" != "all" ] && [ "$TEST" != "contracts-only" ]; then
   echo "Unsupported parameter"
-	echo $TEST
+  echo $TEST
   exit
 fi
 
@@ -30,7 +30,6 @@ pushd ../../perf-contracts
 popd 
 
 pushd klee-last
-	$KLEE_DIR/scripts/process-traces.sh . verify-dpdk Num_bucket_traversals 1 Num_hash_collisions 0  expired_flows 0 \
-		  timestamp_option 0 lpm_stages 1
+	$KLEE_DIR/scripts/process-traces.sh . verify-dpdk Num_bucket_traversals 1 Num_hash_collisions 0  expired_flows 0 
 popd
 

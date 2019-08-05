@@ -18,6 +18,9 @@ fullpage.sty
 *.d
 *.cmd
 *_ubench
+_*
+*.csv 
+*.cdf
 bench/bench
 bench/data.c
 bench/operations.c
@@ -41,3 +44,8 @@ nat/testbed/hard/util/plot/*.png
 /nat/testbed/hard/util/plot/.Rhistory
 nf/ubench/*_test
 nf/pin/counts.so
+.vscode/
+*.eps
+*.png
+nf/ubench/sort-ubench/sort_bench_result
+executable

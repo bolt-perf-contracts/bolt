@@ -16,6 +16,8 @@ struct DoubleChain
   int is_index_allocated;
 };
 
+char *prefix; /* For tracing */
+
 __attribute__((noinline)) int dchain_allocate(int index_range, struct DoubleChain **chain_out)
 {
   klee_trace_ret();
@@ -34,6 +36,7 @@ __attribute__((noinline)) int dchain_allocate(int index_range, struct DoubleChai
     klee_assume((*chain_out)->new_index < index_range);
     (*chain_out)->is_index_allocated = 0;
     (*chain_out)->dchain_out_of_space = klee_int("dchain_out_of_space");
+    TRACE_VAL((uint32_t)(*chain_out), "dchain", _u32)
     DENY(*chain_out);
     return 1;
   }
@@ -47,9 +50,10 @@ __attribute__((noinline)) int dchain_allocate_new_index(struct DoubleChain *chai
                                                         time_t time)
 {
   klee_trace_ret();
+  TRACE_VAL((uint32_t)chain, "dchain", _u32)
 
   ALLOW(chain);
-  klee_trace_extra_ptr(&chain->dchain_out_of_space, sizeof(chain->dchain_out_of_space), "dchain_out_of_space", "type", TD_BOTH);
+  TRACE_VAR(chain->dchain_out_of_space, "dchain_out_of_space")
   if (chain->dchain_out_of_space)
   {
     DENY(chain);
@@ -67,7 +71,6 @@ __attribute__((noinline)) int dchain_rejuvenate_index(struct DoubleChain *chain,
                                                       time_t time)
 {
   klee_trace_ret();
-
   klee_assert(chain != NULL);
   return 1;
 }

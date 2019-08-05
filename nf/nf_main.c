@@ -9,58 +9,68 @@
 
 //#define REPLAY
 
-// TX configuration default values 
-#define IXGBE_DEFAULT_TX_FREE_THRESH  32
-#define IXGBE_DEFAULT_TX_PTHRESH      32
-#define IXGBE_DEFAULT_TX_HTHRESH      0
-#define IXGBE_DEFAULT_TX_WTHRESH      0
+// TX configuration default values
+#define IXGBE_DEFAULT_TX_FREE_THRESH 32
+#define IXGBE_DEFAULT_TX_PTHRESH 32
+#define IXGBE_DEFAULT_TX_HTHRESH 0
+#define IXGBE_DEFAULT_TX_WTHRESH 0
 #define IXGBE_DEFAULT_TX_RSBIT_THRESH 32
 
 #ifdef KLEE_VERIFICATION
-#  define VIGOR_LOOP_BEGIN \
-    unsigned _vigor_lcore_id = rte_lcore_id(); \
-    time_t _vigor_start_time = start_time(); \
-    int _vigor_loop_termination = klee_int("loop_termination"); \
-    unsigned VIGOR_DEVICES_COUNT;                                       \
-    klee_possibly_havoc(&VIGOR_DEVICES_COUNT, sizeof(VIGOR_DEVICES_COUNT), "VIGOR_DEVICES_COUNT"); \
-    time_t VIGOR_NOW;                                                   \
-    klee_possibly_havoc(&VIGOR_NOW, sizeof(VIGOR_NOW), "VIGOR_NOW");    \
-    unsigned VIGOR_DEVICE;                                              \
-    klee_possibly_havoc(&VIGOR_DEVICE, sizeof(VIGOR_DEVICE), "VIGOR_DEVICE"); \
-    unsigned _d;                                                        \
-    klee_possibly_havoc(&_d, sizeof(_d), "_d");                         \
-    while(klee_induce_invariants() & _vigor_loop_termination) { \
-      nf_add_loop_iteration_assumptions(_vigor_lcore_id, _vigor_start_time); \
-      nf_loop_iteration_begin(_vigor_lcore_id, _vigor_start_time);      \
-      VIGOR_NOW = current_time(); \
-      /* concretize the device to avoid leaking symbols into DPDK */ \
-      VIGOR_DEVICES_COUNT = rte_eth_dev_count(); \
-      VIGOR_DEVICE = klee_range(0, VIGOR_DEVICES_COUNT, "VIGOR_DEVICE"); \
-      for(_d = 0; _d < VIGOR_DEVICES_COUNT; _d++) if (VIGOR_DEVICE == _d) { VIGOR_DEVICE = _d; break; } \
-      stub_hardware_receive_packet(VIGOR_DEVICE);
-#  ifdef REPLAY
-#    define VIGOR_LOOP_END                                     \
-        stub_hardware_reset_receive(VIGOR_DEVICE);             \
-        nf_loop_iteration_end(_vigor_lcore_id, VIGOR_NOW);     \
-        if (klee_int("tired")) {                               \
-          exit(0);                                             \
-        }                                                      \
-      }
-#  else//REPLAY
-#    define VIGOR_LOOP_END                                \
-      stub_hardware_reset_receive(VIGOR_DEVICE);          \
-      nf_loop_iteration_end(_vigor_lcore_id, VIGOR_NOW);  \
-      }
-#  endif//REPLAY
-#else//KLEE_VERIFICATION
-#  define VIGOR_LOOP_BEGIN \
-    while (1) { \
-      time_t VIGOR_NOW = current_time(); \
-      unsigned VIGOR_DEVICES_COUNT = rte_eth_dev_count(); \
-      for (uint16_t VIGOR_DEVICE = 0; VIGOR_DEVICE < VIGOR_DEVICES_COUNT; VIGOR_DEVICE++) {
-#  define VIGOR_LOOP_END } }
-#endif//KLEE_VERIFICATION
-
+#define VIGOR_LOOP_BEGIN                                                                         \
+  unsigned _vigor_lcore_id = rte_lcore_id();                                                     \
+  time_t _vigor_start_time = start_time();                                                       \
+  int _vigor_loop_termination = klee_int("loop_termination");                                    \
+  unsigned VIGOR_DEVICES_COUNT;                                                                  \
+  klee_possibly_havoc(&VIGOR_DEVICES_COUNT, sizeof(VIGOR_DEVICES_COUNT), "VIGOR_DEVICES_COUNT"); \
+  time_t VIGOR_NOW;                                                                              \
+  klee_possibly_havoc(&VIGOR_NOW, sizeof(VIGOR_NOW), "VIGOR_NOW");                               \
+  unsigned VIGOR_DEVICE;                                                                         \
+  klee_possibly_havoc(&VIGOR_DEVICE, sizeof(VIGOR_DEVICE), "VIGOR_DEVICE");                      \
+  unsigned _d;                                                                                   \
+  klee_possibly_havoc(&_d, sizeof(_d), "_d");                                                    \
+  while (klee_induce_invariants() & _vigor_loop_termination)                                     \
+  {                                                                                              \
+    nf_add_loop_iteration_assumptions(_vigor_lcore_id, _vigor_start_time);                       \
+    nf_loop_iteration_begin(_vigor_lcore_id, _vigor_start_time);                                 \
+    VIGOR_NOW = current_time();                                                                  \
+    /* concretize the device to avoid leaking symbols into DPDK */                               \
+    VIGOR_DEVICES_COUNT = rte_eth_dev_count();                                                   \
+    VIGOR_DEVICE = klee_range(0, VIGOR_DEVICES_COUNT, "VIGOR_DEVICE");                           \
+    for (_d = 0; _d < VIGOR_DEVICES_COUNT; _d++)                                                 \
+      if (VIGOR_DEVICE == _d)                                                                    \
+      {                                                                                          \
+        VIGOR_DEVICE = _d;                                                                       \
+        break;                                                                                   \
+      }                                                                                          \
+    stub_hardware_receive_packet(VIGOR_DEVICE);
+#ifdef REPLAY
+#define VIGOR_LOOP_END                               \
+  stub_hardware_reset_receive(VIGOR_DEVICE);         \
+  nf_loop_iteration_end(_vigor_lcore_id, VIGOR_NOW); \
+  if (klee_int("tired"))                             \
+  {                                                  \
+    exit(0);                                         \
+  }                                                  \
+  }
+#else //REPLAY
+#define VIGOR_LOOP_END                               \
+  stub_hardware_reset_receive(VIGOR_DEVICE);         \
+  nf_loop_iteration_end(_vigor_lcore_id, VIGOR_NOW); \
+  }
+#endif //REPLAY
+#else  //KLEE_VERIFICATION
+#define VIGOR_LOOP_BEGIN                                                                \
+  while (1)                                                                             \
+  {                                                                                     \
+    time_t VIGOR_NOW = current_time();                                                  \
+    unsigned VIGOR_DEVICES_COUNT = rte_eth_dev_count();                                 \
+    for (uint16_t VIGOR_DEVICE = 0; VIGOR_DEVICE < VIGOR_DEVICES_COUNT; VIGOR_DEVICE++) \
+    {
+#define VIGOR_LOOP_END \
+  }                    \
+  }
+#endif //KLEE_VERIFICATION
 
 // DPDK uses these but doesn't include them. :|
 #include <linux/limits.h>
@@ -81,15 +91,13 @@
 #include "lib/nf_time.h"
 #include "lib/nf_util.h"
 
-
 // Number of RX/TX queues
 static const uint16_t RX_QUEUES_COUNT = 1;
 static const uint16_t TX_QUEUES_COUNT = 1;
 
 #define batch_param 100000
 
-
-#if defined (DUMP_LATENCY) || defined (DUMP_TPUT)
+#if defined(DUMP_LATENCY) || defined(DUMP_TPUT)
 #include "lib/nf_log.h"
 #include <time.h>
 #include "x86intrin.h"
@@ -97,22 +105,24 @@ struct timespec start_time1, end_time;
 
 long ctr = 0;
 
-  #ifdef DUMP_LATENCY
-     struct procTimeEntry{
-        int traffic_class;
-  	long processing_time;
-     } processing_times[batch_param];
-     
-     extern int TRAFFIC_CLASS;
-  #endif //DUMP_LATENCY
+#ifdef DUMP_LATENCY
+struct procTimeEntry
+{
+  int traffic_class;
+  long processing_time;
+} processing_times[batch_param];
 
-#endif//DUMP_LATENCY || DUMP_TPUT
+extern int TRAFFIC_CLASS;
+#endif //DUMP_LATENCY
+
+#endif //DUMP_LATENCY || DUMP_TPUT
 
 #ifdef DUMP_PERF_CTRS
 #include <assert.h>
 #include "papi.h"
-long ctr =0;
-struct perf_ctrs_entry{
+long ctr = 0;
+struct perf_ctrs_entry
+{
   long long cycles;
   long long l3_misses;
 } perf_ctrs[batch_param];
@@ -133,11 +143,10 @@ static const uint16_t RX_QUEUE_SIZE = 96;
 static const uint16_t TX_QUEUE_SIZE = 96;
 
 // Clone pool for flood()
-static struct rte_mempool* clone_pool;
+static struct rte_mempool *clone_pool;
 
 // Buffer count for mempools
 static const unsigned MEMPOOL_BUFFER_COUNT = 256;
-
 
 // --- Initialization ---
 static int
@@ -151,12 +160,12 @@ nf_init_device(uint16_t device, struct rte_mempool *mbuf_pool)
 
   // Configure the device
   retval = rte_eth_dev_configure(
-    device,
-    RX_QUEUES_COUNT,
-    TX_QUEUES_COUNT,
-    &device_conf
-  );
-  if (retval != 0) {
+      device,
+      RX_QUEUES_COUNT,
+      TX_QUEUES_COUNT,
+      &device_conf);
+  if (retval != 0)
+  {
     return retval;
   }
 
@@ -172,89 +181,95 @@ nf_init_device(uint16_t device, struct rte_mempool *mbuf_pool)
 #ifndef KLEE_VERIFICATION
   // Allocate and set up TX queues
   struct rte_eth_txconf tx_conf;
-  tx_conf = (struct rte_eth_txconf) {
-                .tx_thresh = {
-                        .pthresh = IXGBE_DEFAULT_TX_PTHRESH,
-                        .hthresh = IXGBE_DEFAULT_TX_HTHRESH,
-                        .wthresh = IXGBE_DEFAULT_TX_WTHRESH,
-                },
-                .tx_free_thresh = IXGBE_DEFAULT_TX_FREE_THRESH,
-                .tx_rs_thresh = IXGBE_DEFAULT_TX_RSBIT_THRESH,
-                .txq_flags = ETH_TXQ_FLAGS_NOMULTSEGS |
-                                ETH_TXQ_FLAGS_NOOFFLOADS,
-        };
-  
+  tx_conf = (struct rte_eth_txconf){
+      .tx_thresh = {
+          .pthresh = IXGBE_DEFAULT_TX_PTHRESH,
+          .hthresh = IXGBE_DEFAULT_TX_HTHRESH,
+          .wthresh = IXGBE_DEFAULT_TX_WTHRESH,
+      },
+      .tx_free_thresh = IXGBE_DEFAULT_TX_FREE_THRESH,
+      .tx_rs_thresh = IXGBE_DEFAULT_TX_RSBIT_THRESH,
+      .txq_flags = ETH_TXQ_FLAGS_NOMULTSEGS | ETH_TXQ_FLAGS_NOOFFLOADS,
+  };
+
   tx_conf.tx_free_thresh = 1;
   tx_conf.tx_rs_thresh = 1;
   tx_confp = &tx_conf;
-#endif//!KLEE_VERIFICATION
- 
-  for (int txq = 0; txq < TX_QUEUES_COUNT; txq++) {
+#endif //!KLEE_VERIFICATION
+
+  for (int txq = 0; txq < TX_QUEUES_COUNT; txq++)
+  {
     retval = rte_eth_tx_queue_setup(
-      device,
-      txq,
-      TX_QUEUE_SIZE,
-      rte_eth_dev_socket_id(device),
-      NULL // default config
+        device,
+        txq,
+        TX_QUEUE_SIZE,
+        rte_eth_dev_socket_id(device),
+        NULL // default config
     );
-    if (retval != 0) {
+    if (retval != 0)
+    {
       return retval;
     }
   }
 
   // Allocate and set up RX queues
-  for (int rxq = 0; rxq < RX_QUEUES_COUNT; rxq++) {
+  for (int rxq = 0; rxq < RX_QUEUES_COUNT; rxq++)
+  {
     retval = rte_eth_rx_queue_setup(
-      device,
-      rxq,
-      RX_QUEUE_SIZE,
-      rte_eth_dev_socket_id(device),
-      NULL, // default config
-      mbuf_pool
-    );
-    if (retval != 0) {
+        device,
+        rxq,
+        RX_QUEUE_SIZE,
+        rte_eth_dev_socket_id(device),
+        NULL, // default config
+        mbuf_pool);
+    if (retval != 0)
+    {
       return retval;
     }
   }
 
   // Start the device
   retval = rte_eth_dev_start(device);
-  if (retval != 0) {
+  if (retval != 0)
+  {
     return retval;
   }
 
   // Enable RX in promiscuous mode, just in case
   rte_eth_promiscuous_enable(device);
-  if (rte_eth_promiscuous_get(device) != 1) {
+  if (rte_eth_promiscuous_get(device) != 1)
+  {
     return retval;
   }
 
   return 0;
 }
 
-
 // Flood method for the bridge
 #ifdef KLEE_VERIFICATION
-void flood(struct rte_mbuf* frame, uint16_t skip_device, uint16_t nb_devices); // defined in stubs
+void flood(struct rte_mbuf *frame, uint16_t skip_device, uint16_t nb_devices); // defined in stubs
 #else
-void
-flood(struct rte_mbuf* frame, uint16_t skip_device, uint16_t nb_devices) {
-  for (uint16_t device = 0; device < nb_devices; device++) {
-    if (device == skip_device) continue;
-    struct rte_mbuf* copy = rte_pktmbuf_clone(frame, clone_pool);
-    if (copy == NULL) {
+void flood(struct rte_mbuf *frame, uint16_t skip_device, uint16_t nb_devices)
+{
+  for (uint16_t device = 0; device < nb_devices; device++)
+  {
+    if (device == skip_device)
+      continue;
+    struct rte_mbuf *copy = rte_pktmbuf_clone(frame, clone_pool);
+    if (copy == NULL)
+    {
       rte_exit(EXIT_FAILURE, "Cannot clone a frame for flooding");
     }
     uint16_t actual_tx_len = rte_eth_tx_burst(device, 0, &copy, 1);
 
-    if (actual_tx_len == 0) {
+    if (actual_tx_len == 0)
+    {
       rte_pktmbuf_free(copy);
     }
   }
   rte_pktmbuf_free(frame);
 }
-#endif//!KLEE_VERIFICATION
-
+#endif //!KLEE_VERIFICATION
 
 // --- Per-core work ---
 
@@ -262,8 +277,10 @@ static void
 lcore_main(void)
 {
   // TODO is this check useful?
-  for (uint16_t device = 0; device < rte_eth_dev_count(); device++) {
-    if (rte_eth_dev_socket_id(device) > 0 && rte_eth_dev_socket_id(device) != (int) rte_socket_id()) {
+  for (uint16_t device = 0; device < rte_eth_dev_count(); device++)
+  {
+    if (rte_eth_dev_socket_id(device) > 0 && rte_eth_dev_socket_id(device) != (int)rte_socket_id())
+    {
       NF_INFO("Device %" PRIu8 " is on remote NUMA node to polling thread.", device);
     }
   }
@@ -274,144 +291,165 @@ lcore_main(void)
 
   uint16_t actual_rx_len;
   uint16_t dst_device;
-  struct rte_mbuf* buf;
+  struct rte_mbuf *buf;
   uint16_t actual_tx_len;
 #ifdef KLEE_VERIFICATION
   klee_possibly_havoc(&actual_rx_len, sizeof(actual_rx_len), "actual_rx_len");
   klee_possibly_havoc(&dst_device, sizeof(dst_device), "dst_device");
   klee_possibly_havoc(&buf, sizeof(buf), "buf_addr");
   klee_possibly_havoc(&actual_tx_len, sizeof(actual_tx_len), "actual_tx_len");
-#endif//KLEE_VERIFICATION
+#endif //KLEE_VERIFICATION
 
 #ifdef DUMP_TPUT
-      int gettime_result1 = clock_gettime(CLOCK_MONOTONIC, &start_time1);
-#endif//DUMP_TPUT
+  int gettime_result1 = clock_gettime(CLOCK_MONOTONIC, &start_time1);
+#endif //DUMP_TPUT
 
 #ifdef DUMP_PERF_CTRS
-   int retval,num_hwcntrs = 0, EventSet = PAPI_NULL, native;
-   typeof (PAPI_OK) papi_ok_proxy ;
-   int Events[] = {PAPI_TOT_INS,PAPI_L3_TCM};
-   assert((num_hwcntrs = PAPI_num_counters()) > PAPI_OK);
-   assert(sizeof(Events) / sizeof(Events[0]) <= num_hwcntrs);
-   assert((retval = PAPI_start_counters(Events, sizeof(Events) / sizeof(Events[0]))) == PAPI_OK);
-   long long values[sizeof(Events) / sizeof(Events[0])];
-   assert((retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]))) == PAPI_OK);
+  int retval, num_hwcntrs = 0, EventSet = PAPI_NULL, native;
+  typeof(PAPI_OK) papi_ok_proxy;
+  int Events[] = {PAPI_TOT_INS, PAPI_L3_TCM};
+  assert((num_hwcntrs = PAPI_num_counters()) > PAPI_OK);
+  assert(sizeof(Events) / sizeof(Events[0]) <= num_hwcntrs);
+  assert((retval = PAPI_start_counters(Events, sizeof(Events) / sizeof(Events[0]))) == PAPI_OK);
+  long long values[sizeof(Events) / sizeof(Events[0])];
+  assert((retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]))) == PAPI_OK);
 
-   long long ref_cycles = values[0];
-   long long l3_tcm = values[3]; 
+  long long ref_cycles = values[0];
+  long long l3_tcm = values[3];
 #endif
-  
+
   VIGOR_LOOP_BEGIN
   buf = NULL;
 
 #ifdef DUMP_LATENCY
-      int gettime_result1 = clock_gettime(CLOCK_MONOTONIC, &start_time1);
-#endif//DUMP_LATENCY
+  int gettime_result1 = clock_gettime(CLOCK_MONOTONIC, &start_time1);
+#endif //DUMP_LATENCY
 
 #ifdef DUMP_PERF_CTRS
-   retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
-#endif 
+  retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
+#endif
 
-    actual_rx_len = rte_eth_rx_burst(VIGOR_DEVICE, 0, &buf, 1);
+  actual_rx_len = rte_eth_rx_burst(VIGOR_DEVICE, 0, &buf, 1);
 
-    if (actual_rx_len != 0) {
+  if (actual_rx_len != 0)
+  {
 
 #ifdef DUMP_PERF_VARS
     NF_PERF_DEBUG("lcore_main:New_packet");
-#endif//DUMP_PERF_VARS
+#endif //DUMP_PERF_VARS
 
-      dst_device = nf_core_process(&buf[0], VIGOR_NOW);
+    dst_device = nf_core_process(&buf[0], VIGOR_NOW);
 
-      if (dst_device == VIGOR_DEVICE) {
-        rte_pktmbuf_free(buf);
-      } else if (dst_device == FLOOD_FRAME) {
-        flood(buf, VIGOR_DEVICE, VIGOR_DEVICES_COUNT);
+    if (dst_device == VIGOR_DEVICE)
+    {
+      rte_pktmbuf_free(buf);
+    }
+    else if (dst_device == FLOOD_FRAME)
+    {
+      flood(buf, VIGOR_DEVICE, VIGOR_DEVICES_COUNT);
 #ifdef DUMP_PERF_VARS
-    printf("Broadcast\n");
-#endif 
-      } else {
-        actual_tx_len = rte_eth_tx_burst(dst_device, 0, &buf, 1);
-        if (actual_tx_len == 0) {
-          rte_pktmbuf_free(buf);
+      printf("Broadcast\n");
+#endif
+    }
+    else
+    {
+      actual_tx_len = rte_eth_tx_burst(dst_device, 0, &buf, 1);
+      if (actual_tx_len == 0)
+      {
+        rte_pktmbuf_free(buf);
+      }
+      else
+      {
+#ifdef DUMP_PERF_CTRS
+        retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
+        if (actual_rx_len != 0)
+        {
+          perf_ctrs[ctr].cycles = values[0];
+          perf_ctrs[ctr].l3_misses = values[1];
+          ctr++;
         }
-        else {
-          #ifdef DUMP_PERF_CTRS
-  retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
-  if(actual_rx_len!=0) {
-    perf_ctrs[ctr].cycles = values[0];
-    perf_ctrs[ctr].l3_misses = values[1];
-    ctr++;
-  }
-  if(ctr >= batch_param){
-    for(int i = 0; i < batch_param; i++) {
+        if (ctr >= batch_param)
+        {
+          for (int i = 0; i < batch_param; i++)
+          {
             printf("Cycles %lld L3-Misses %lld \n",
                    perf_ctrs[i].cycles,
                    perf_ctrs[i].l3_misses);
           }
-    fflush(stdout);
-    ctr = 0;
-  }
-#endif //DUMP_PERF_CTRS
-        }
-      }
-    }
-#ifdef DUMP_LATENCY
-      int gettime_result2 = clock_gettime(CLOCK_MONOTONIC, &end_time);
-      if (gettime_result1 == 0 && gettime_result2 == 0 && actual_rx_len!=0) {
-        processing_times[ctr].processing_time =
-             ((end_time.tv_sec - start_time1.tv_sec)*1000000000 +
-              (end_time.tv_nsec - start_time1.tv_nsec));
-        ctr++;
-        if(batch_param <= ctr) {
-          for(int i = 0; i < batch_param; i++) {
-            printf("Time for class %d is %ld\n",
-                   processing_times[i].traffic_class,
-                   processing_times[i].processing_time);
-          }
           fflush(stdout);
           ctr = 0;
-          fflush(stdout);
         }
+#endif //DUMP_PERF_CTRS
       }
-#endif//DUMP_LATENCY
-
+    }
+  }
+#ifdef DUMP_LATENCY
+  int gettime_result2 = clock_gettime(CLOCK_MONOTONIC, &end_time);
+  if (gettime_result1 == 0 && gettime_result2 == 0 && actual_rx_len != 0)
+  {
+    processing_times[ctr].traffic_class = TRAFFIC_CLASS;
+    processing_times[ctr].processing_time =
+        ((end_time.tv_sec - start_time1.tv_sec) * 1000000000 +
+         (end_time.tv_nsec - start_time1.tv_nsec));
+    ctr++;
+    if (batch_param <= ctr)
+    {
+      for (int i = 0; i < batch_param; i++)
+      {
+        printf("Time for class %d is %ld\n",
+               processing_times[i].traffic_class,
+               processing_times[i].processing_time);
+      }
+      fflush(stdout);
+      ctr = 0;
+      fflush(stdout);
+    }
+  }
+#endif //DUMP_LATENCY
 
 #ifdef DUMP_TPUT
-      if (actual_rx_len!=0) ctr++; //Packet was processed
-      if(batch_param <= ctr) {
-         int gettime_result2 = clock_gettime(CLOCK_MONOTONIC, &end_time);
-         if (gettime_result1 == 0 && gettime_result2 == 0) { //I dunno why this is there tbh
-             long proc_time = ((end_time.tv_sec - start_time1.tv_sec)*1000000000 +
-              (end_time.tv_nsec - start_time1.tv_nsec));
-             printf("Time for %ld packets is %ld ns\n",
-                   ctr,proc_time);
-         }
-         fflush(stdout);
-         ctr = 0;
-         fflush(stdout);
-	 gettime_result1 = clock_gettime(CLOCK_MONOTONIC, &start_time1);
-      }
-#endif//DUMP_TPUT
+  if (actual_rx_len != 0)
+    ctr++; //Packet was processed
+  if (batch_param <= ctr)
+  {
+    int gettime_result2 = clock_gettime(CLOCK_MONOTONIC, &end_time);
+    if (gettime_result1 == 0 && gettime_result2 == 0)
+    { //I dunno why this is there tbh
+      long proc_time = ((end_time.tv_sec - start_time1.tv_sec) * 1000000000 +
+                        (end_time.tv_nsec - start_time1.tv_nsec));
+      printf("Time for %ld packets is %ld ns\n",
+             ctr, proc_time);
+    }
+    fflush(stdout);
+    ctr = 0;
+    fflush(stdout);
+    gettime_result1 = clock_gettime(CLOCK_MONOTONIC, &start_time1);
+  }
+#endif //DUMP_TPUT
 #ifdef STOP_ON_RX_0
-    else if(VIGOR_DEVICE == 0) { return; }
+  else if (VIGOR_DEVICE == 0)
+  {
+    return;
+  }
 #endif
 #ifdef STOP_ON_RX_1
-    else if(VIGOR_DEVICE == 1) { return; }
+  else if (VIGOR_DEVICE == 1)
+  {
+    return;
+  }
 #endif
 
-  
   VIGOR_LOOP_END
 }
 
-
 // --- Main ---
 
-int
-main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
   // Initialize the Environment Abstraction Layer (EAL)
   int ret = rte_eal_init(argc, argv);
-  if (ret < 0) {
+  if (ret < 0)
+  {
     rte_exit(EXIT_FAILURE, "Error with EAL initialization, ret=%d\n", ret);
   }
   argc -= ret;
@@ -428,37 +466,43 @@ main(int argc, char* argv[])
 
   // Create a memory pool
   unsigned nb_devices = rte_eth_dev_count();
-  struct rte_mempool* mbuf_pool = rte_pktmbuf_pool_create(
-    "MEMPOOL", // name
-    MEMPOOL_BUFFER_COUNT * nb_devices, // #elements
-    0, // cache size (per-lcore, not useful in a single-threaded app)
-    0, // application private area size
-    RTE_MBUF_DEFAULT_BUF_SIZE, // data buffer size
-    rte_socket_id() // socket ID
+  struct rte_mempool *mbuf_pool = rte_pktmbuf_pool_create(
+      "MEMPOOL",                         // name
+      MEMPOOL_BUFFER_COUNT * nb_devices, // #elements
+      0,                                 // cache size (per-lcore, not useful in a single-threaded app)
+      0,                                 // application private area size
+      RTE_MBUF_DEFAULT_BUF_SIZE,         // data buffer size
+      rte_socket_id()                    // socket ID
   );
-  if (mbuf_pool == NULL) {
+  if (mbuf_pool == NULL)
+  {
     rte_exit(EXIT_FAILURE, "Cannot create mbuf pool: %s\n", rte_strerror(rte_errno));
   }
 
   // Create another pool for the flood() cloning
   clone_pool = rte_pktmbuf_pool_create(
-    "clone_pool", // name
-     MEMPOOL_BUFFER_COUNT, // #elements
-     0, // cache size (same remark as above)
-     0, // application private data size
-     RTE_MBUF_DEFAULT_BUF_SIZE, // data buffer size
-     rte_socket_id() // socket ID
+      "clone_pool",              // name
+      MEMPOOL_BUFFER_COUNT,      // #elements
+      0,                         // cache size (same remark as above)
+      0,                         // application private data size
+      RTE_MBUF_DEFAULT_BUF_SIZE, // data buffer size
+      rte_socket_id()            // socket ID
   );
-  if (clone_pool == NULL) {
+  if (clone_pool == NULL)
+  {
     rte_exit(EXIT_FAILURE, "Cannot create mbuf clone pool: %s\n", rte_strerror(rte_errno));
   }
 
   // Initialize all devices
-  for (uint16_t device = 0; device < nb_devices; device++) {
+  for (uint16_t device = 0; device < nb_devices; device++)
+  {
     ret = nf_init_device(device, mbuf_pool);
-    if (ret == 0) {
+    if (ret == 0)
+    {
       NF_INFO("Initialized device %" PRIu8 ".", device);
-    } else {
+    }
+    else
+    {
       rte_exit(EXIT_FAILURE, "Cannot init device %" PRIu8 ", ret=%d", device, ret);
     }
   }

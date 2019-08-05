@@ -53,12 +53,6 @@ SRCS-y += $(SELF_DIR)/lib/containers/map.c $(SELF_DIR)/lib/containers/map-impl.c
 # NULL MAP
 #SRCS-y += $(SELF_DIR)/lib/containers/map-null.c $(SELF_DIR)/lib/containers/double-map-using-map.c
 
-#printf the performance counters
-#CFLAGS += -DDUMP_LATENCY
-#CFLAGS += -DDUMP_TPUT
-#CFLAGS += -DDUMP_PERF_VARS
-#CFLAGS += -DDUMP_PERF_CTRS
- 
 # VERIFIED DCHAIN
 SRCS-y +=  $(SELF_DIR)/lib/containers/double-chain.c $(SELF_DIR)/lib/containers/double-chain-impl.c
 # RISHABH DCHAIN
@@ -76,8 +70,17 @@ CFLAGS += -O2 -g
 # For nanosecond timestamps
 #CFLAGS += -DNSEC_TIMESTAMPS
 
-# Linker flags
-LDFLAGS += $(PAPI_SRC)/libpapi.a
+#Print the performance counters
+#CFLAGS += -DDUMP_LATENCY
+#CFLAGS += -DDUMP_TPUT
+#CFLAGS += -DDUMP_PERF_VARS
+#CFLAGS += -DDUMP_PERF_CTRS
+
+# For perf clarity tests
+# CFLAGS += -DCLARITY_TEST
+
+# Linker flags (Only for performance counters)
+#LDFLAGS += $(PAPI_SRC)/libpapi.a
 
 # DPDK stuff
 include $(RTE_SDK)/mk/rte.extapp.mk
@@ -132,7 +135,8 @@ VERIF_FILES += ../lib/stubs/containers/map-stub.c \
                ../lib/stubs/containers/double-chain-stub.c \
                ../lib/stubs/containers/vector-stub.c \
                ../lib/stubs/containers/expirator-stub.c \
-               ../router/router_options_stub.c \
+               ../lib/stubs/containers/traced-variables-stub.c \
+							 ../router/router_options_stub.c \
                ../lpm/lpm_stub.c
 
 # Specific NF stubs
@@ -235,7 +239,7 @@ executable-bridge-hardware:
 	        hardware_stub.o \
 		dpdk_mempool_singleton.o \
 	        bridge_loop.o double-chain-stub.o expirator-stub.o double-map-stub.o \
-		map-stub.o vector-stub.o \
+		map-stub.o vector-stub.o traced-variables-stub.o \
 	        cmdline_socket.o cmdline.o cmdline_cirbuf.o cmdline_parse.o cmdline_parse_*.o cmdline_rdline.o cmdline_vt100.o \
 	        core_stub.o \
 	        time_stub.o time.o timerfd.o \
@@ -271,7 +275,7 @@ executable-vignat-hardware:
 	        flowtable.o flowmanager.o flow.o flow-log.o \
 	        hardware_stub.o \
 		dpdk_mempool_singleton.o \
-	        loop-stub.o double-chain-stub.o expirator-stub.o double-map-stub.o \
+	        loop-stub.o double-chain-stub.o expirator-stub.o double-map-stub.o traced-variables-stub.o \
 	        cmdline_socket.o cmdline.o cmdline_cirbuf.o cmdline_parse.o cmdline_parse_*.o cmdline_rdline.o cmdline_vt100.o \
 	        core_stub.o \
 	        time_stub.o time.o timerfd.o \
@@ -299,7 +303,7 @@ executable-vignat:
 	 gcc -o executable \
 	 	nf_main.o nat_forward_vignat.o nf_util.o nat_config.o \
 	 	flowtable.o flowmanager.o flow.o flow-log.o \
-	 	loop-stub.o double-chain-stub.o expirator-stub.o double-map-stub.o \
+	 	loop-stub.o double-chain-stub.o expirator-stub.o double-map-stub.o traced-variables-stub.o \
 	  cmdline_socket.o cmdline.o cmdline_cirbuf.o cmdline_parse.o cmdline_parse_*.o cmdline_rdline.o cmdline_vt100.o \
 	  core_stub.o \
 	 	time_stub.o time.o timerfd.o \
@@ -322,7 +326,7 @@ executable-router-hardware:
 	        nf_main.o router.o router_options.o nf_util.o nat_config.o\
 	        hardware_stub.o \
 		dpdk_mempool_singleton.o \
-	        double-chain-stub.o expirator-stub.o double-map-stub.o \
+	        double-chain-stub.o expirator-stub.o double-map-stub.o traced-variables-stub.o \
 	        cmdline_socket.o cmdline.o cmdline_cirbuf.o cmdline_parse.o cmdline_parse_*.o cmdline_rdline.o cmdline_vt100.o \
 	        core_stub.o \
 	        time_stub.o time.o timerfd.o \
@@ -350,7 +354,7 @@ executable-router:
 	 gcc -o executable \
 	 	nf_main.o router.o nf_util.o nat_config.o \
 	  cmdline_socket.o cmdline.o cmdline_cirbuf.o cmdline_parse.o cmdline_parse_*.o cmdline_rdline.o cmdline_vt100.o \
-	  core_stub.o router_options_stub.o \
+	  core_stub.o router_options_stub.o traced-variables-stub.o \
 	 	time_stub.o time.o timerfd.o \
 	 	intrinsics.o KTest.o
 
@@ -363,7 +367,7 @@ executable-lpm:
 	gcc -o executable \
 	    nf_main.o lpm.o nf_util.o nat_config.o \
 	    cmdline_socket.o cmdline.o cmdline_cirbuf.o cmdline_parse.o cmdline_parse_*.o cmdline_rdline.o cmdline_vt100.o \
-	    core_stub.o lpm_stub.o \
+	    core_stub.o lpm_stub.o traced-variables-stub.o \
 	    time_stub.o time.o timerfd.o \
 	    intrinsics.o KTest.o
 
@@ -381,7 +385,7 @@ executable-lpm-hardware:
         nf_main.o lpm.o lpm_stub.o nf_util.o nat_config.o\
 	        hardware_stub.o \
 		dpdk_mempool_singleton.o \
-	        double-chain-stub.o expirator-stub.o double-map-stub.o \
+	        double-chain-stub.o expirator-stub.o double-map-stub.o traced-variables-stub.o \
 	        cmdline_socket.o cmdline.o cmdline_cirbuf.o cmdline_parse.o cmdline_parse_*.o cmdline_rdline.o cmdline_vt100.o \
 	        core_stub.o \
 	        time_stub.o time.o timerfd.o \
@@ -416,7 +420,7 @@ executable-firewall-hardware:
 		nf_main.o firewall.o nf_util.o nat_config.o\
 	        hardware_stub.o \
 		dpdk_mempool_singleton.o \
-	        double-chain-stub.o expirator-stub.o double-map-stub.o \
+	        double-chain-stub.o expirator-stub.o double-map-stub.o traced-variables-stub.o \
 	        cmdline_socket.o cmdline.o cmdline_cirbuf.o cmdline_parse.o cmdline_parse_*.o cmdline_rdline.o cmdline_vt100.o \
 	        core_stub.o \
 	        time_stub.o time.o timerfd.o \
@@ -469,7 +473,7 @@ executable-bridge:
 	   $(KLEE_ROOT)/lib/Basic/KTest.cpp
 	 gcc -o executable \
 	 	nf_main.o bridge_forward.o nf_util.o bridge_config.o bridge_data.o \
-	 	bridge_loop.o double-chain-stub.o expirator-stub.o double-map-stub.o \
+	 	bridge_loop.o double-chain-stub.o expirator-stub.o double-map-stub.o traced-variables-stub.o \
 	  cmdline_socket.o cmdline.o cmdline_cirbuf.o cmdline_parse.o cmdline_parse_*.o cmdline_rdline.o cmdline_vt100.o \
 	  core_stub.o \
 	 	time_stub.o time.o timerfd.o \
@@ -484,7 +488,7 @@ executable-dmz:
 	   $(KLEE_ROOT)/lib/Basic/KTest.cpp
 	 gcc -o executable \
 	 	nf_main.o dmz_main.o nf_util.o dmz_config.o \
-	 	dmz_loop.o double-chain-stub.o expirator-stub.o double-map-stub.o \
+	 	dmz_loop.o double-chain-stub.o expirator-stub.o double-map-stub.o traced-variables-stub.o \
 	 	flowtable.o flowmanager.o flow.o flow-log.o \
 	  cmdline_socket.o cmdline.o cmdline_cirbuf.o cmdline_parse.o cmdline_parse_*.o cmdline_rdline.o cmdline_vt100.o \
 	  core_stub.o \
@@ -508,7 +512,7 @@ executable-vigbalancer-hardware:
 	        nf_util.o nf_main.o lb_main.o lb_balancer.o lb_config.o lb_data.o lb_loop.o \
 	        hardware_stub.o \
 		dpdk_mempool_singleton.o \
-	        double-chain-stub.o expirator-stub.o double-map-stub.o \
+	        double-chain-stub.o expirator-stub.o double-map-stub.o traced-variables-stub.o \
 		map-stub.o vector-stub.o \
 	        cmdline_socket.o cmdline.o cmdline_cirbuf.o cmdline_parse.o cmdline_parse_*.o cmdline_rdline.o cmdline_vt100.o \
 	        core_stub.o \
@@ -537,7 +541,7 @@ executable-vigbalancer:
 	 gcc -o executable \
 	 	nf_main.o nf_util.o lb_main.o lb_balancer.o \
 	 	lb_config.o lb_data.o lb_loop.o \
-	        double-chain-stub.o expirator-stub.o double-map-stub.o \
+	        double-chain-stub.o expirator-stub.o double-map-stub.o traced-variables-stub.o \
 		map-stub.o vector-stub.o \
 	  cmdline_socket.o cmdline.o cmdline_cirbuf.o cmdline_parse.o cmdline_parse_*.o cmdline_rdline.o cmdline_vt100.o \
 	  core_stub.o \

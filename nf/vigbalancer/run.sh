@@ -20,7 +20,7 @@ if [ $SCENARIO = "loopback" ]; then
     sudo taskset -c 8 ./build/lb -n 2 --  \
         --flow-capacity 65536 --flow-expiration $FLOW_EXP_TIME \
 	--cht-height 97 \
-	--backend-capacity 20 --backend-expiration 60000000000
+	--backend-capacity 32 --backend-expiration 60000000000
 else
     echo "[bench] ERROR: non-loopback is not supported" 1>&2
     exit 1

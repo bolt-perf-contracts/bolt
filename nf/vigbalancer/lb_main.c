@@ -19,6 +19,7 @@
 
 struct lb_config config;
 struct LoadBalancer* balancer;
+enum TrafficClass NF_TRAFFIC_CLASS = UNDEFINED;
 
 void nf_core_init()
 {

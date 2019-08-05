@@ -14,7 +14,6 @@ To run the NAT (but not to verify it), you need to set up hugepages for DPDK; se
 Our dependencies, are modified versions of [KLEE](https://github.com/rishabh246/klee),
 [KLEE-uClibc](https://github.com/vignat/klee-uclibc) and [Intel Pin](https://software.intel.com/sites/landingpage/pintool/docs/97554/Pin/html).
 
-
 # Installation
 
 Run `install.sh`, which will install the Bolt toolchain and create a file named `paths.sh` containing all necessary environment variables
@@ -32,7 +31,7 @@ $ make
 $ ./build/nat
 
 # Running Bolt on VigNAT
-$ bash ../test-bolt.sh vignat
+$ bash ../test-bolt.sh
 ```
 
 
@@ -42,4 +41,4 @@ Subdirectories have their own README files.
 
 * nf - contains the libVig library of the data structures and all the NFs involved in the project
 * install - patches and config files for the Bolt toolchain dependencies
-* perf-contracts - contains the performance contracts for the data structure library. These are used as building blocks to generate performance contracts for entire NFs. 
+* perf-contracts - contains the performance contracts for the data structure library. These are used as builing blocks to generate performance contracts for entire NFs. 

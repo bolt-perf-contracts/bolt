@@ -38,8 +38,6 @@ struct LoadBalancer
   struct Vector *cht;
 };
 
-enum TrafficClass TRAFFIC_CLASS = UNDEFINED;
-
 #ifdef KLEE_VERIFICATION
 #include <klee/klee.h>
 
@@ -219,7 +217,7 @@ lb_allocate_balancer(uint32_t flow_capacity, uint32_t backend_capacity,
 #ifdef KLEE_VERIFICATION
   available_backends = klee_range(0, backend_capacity + 1, "available_backends");
 
-  map_set_layout(balancer->flow_to_flow_id, lb_flow_fields, lb_flow_fields_number(), NULL, 0, "LoadBalancedFlow");
+  map_set_key_size(balancer->flow_to_flow_id, sizeof(struct LoadBalancedFlow));
   map_set_entry_condition(balancer->flow_to_flow_id, lb_flow_id_condition);
   vector_set_layout(balancer->flow_heap, lb_flow_fields, lb_flow_fields_number(), NULL, 0, "LoadBalancedFlow");
   //vector_set_layout(balancer->flow_id_to_backend_id, &uint32_field, 1, NULL, 0, "uint32_t");
@@ -229,7 +227,7 @@ lb_allocate_balancer(uint32_t flow_capacity, uint32_t backend_capacity,
   vector_set_layout(balancer->backend_ips, NULL, 0, NULL, 0, "uint32_t");
   vector_set_layout(balancer->backends, lb_backend_fields, lb_backend_fields_number(), NULL, 0, "LoadBalancedBackend");
   vector_set_entry_condition(balancer->backends, lb_backend_condition, balancer);
-  map_set_layout(balancer->ip_to_backend_id, &uint32_field, 1, NULL, 0, "uint32_t");
+  map_set_key_size(balancer->ip_to_backend_id, sizeof(uint32_t));
   map_set_entry_condition(balancer->ip_to_backend_id, lb_backend_id_condition);
   vector_set_layout(balancer->cht, NULL, 0, NULL, 0, "uint32_t");
 #endif //KLEE_VERIFICATION
@@ -271,6 +269,7 @@ int lb_find_preferred_available_backend(uint64_t hash, struct Vector *cht,
                                         uint32_t backend_capacity,
                                         int *chosen_backend)
 {
+  char *prefix; /* For tracing */
   klee_trace_ret();
   klee_trace_param_u64(hash, "hash");
   klee_trace_param_u64((uint64_t)cht, "cht");
@@ -278,7 +277,9 @@ int lb_find_preferred_available_backend(uint64_t hash, struct Vector *cht,
   klee_trace_param_u32(cht_height, "cht_height");
   klee_trace_param_u32(backend_capacity, "backend_capacity");
   klee_trace_param_ptr(chosen_backend, sizeof(int), "chosen_backend");
-  klee_trace_extra_ptr(&available_backends, sizeof(available_backends), "available_backends", "type", TD_BOTH);
+  TRACE_VAL((uint32_t)(cht), "cht", _u32)
+  TRACE_VAR(backend_capacity, "backend_capacity")
+  TRACE_VAR(available_backends, "available_backends")
   if (klee_int("prefered_backend_found"))
   {
     *chosen_backend = klee_int("chosen_backend");
@@ -350,7 +351,7 @@ lb_get_backend(struct LoadBalancer *balancer, struct LoadBalancedFlow *flow, tim
         vector_return_full(balancer->flow_id_to_backend_id, flow_index, (void *)vec_flow_id_to_backend_id);
         map_put(balancer->flow_to_flow_id, vec_flow, flow_index);
         vector_return_half(balancer->flow_heap, flow_index, vec_flow); // other half in map
-        VIGOR_TAG(TRAFFIC_CLASS, NEW_FLOW_ALLOTTED);
+        VIGOR_TAG(TRAFFIC_CLASS, NEW_FLOW_ALLOCATED);
       } // Doesn't matter if we can't insert
       struct LoadBalancedBackend *vec_backend;
       vector_borrow_full(balancer->backends, backend_index, (void **)&vec_backend);
@@ -419,11 +420,10 @@ void lb_process_heartbit(struct LoadBalancer *balancer,
   int backend_index;
   if (map_get(balancer->ip_to_backend_id, &flow->src_ip, &backend_index) == 0)
   {
-    VIGOR_TAG(TRAFFIC_CLASS, NEW_BACKEND);
     if (0 != dchain_allocate_new_index(balancer->active_backends,
                                        &backend_index, now))
     {
-      VIGOR_TAG(TRAFFIC_CLASS, NEW_BACKEND_INSERTED);
+      VIGOR_TAG(TRAFFIC_CLASS, NEW_BACKEND_ALLOCATED);
       struct LoadBalancedBackend *new_backend;
       vector_borrow_full(balancer->backends, backend_index, (void **)&new_backend);
       new_backend->ip = flow->src_ip;
@@ -440,12 +440,12 @@ void lb_process_heartbit(struct LoadBalancer *balancer,
     else
     {
       //Otherwise ignore this backend, we are full.
-      VIGOR_TAG(TRAFFIC_CLASS, DROP_BACKEND);
+      VIGOR_TAG(TRAFFIC_CLASS, BACKEND_TABLE_FULL);
     }
   }
   else
   {
-    VIGOR_TAG(TRAFFIC_CLASS, REJ_BACKEND);
+    VIGOR_TAG(TRAFFIC_CLASS, KNOWN_BACKEND);
     // Removed assert, because it is not trivial to satisfy during symbex
     //assert(dchain_is_index_allocated(balancer->active_backends, backend_index));
     dchain_rejuvenate_index(balancer->active_backends, backend_index, now);

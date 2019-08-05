@@ -51,7 +51,7 @@ default: perf-contracts.so test-dl
 clean:
 	rm -f *.so test-dl *.o
 
-perf-contracts.so:
+perf-contracts.so: $(SRCS_DEP) $(SRCS_MAIN)
 	$(COMPILE_COMMAND) $(CXXFLAGS) -c -fPIC $(SRCS_DEP) 
 	$(COMPILE_COMMAND) $(CXXFLAGS) -shared -fPIC $(SRCS_MAIN) *.o -o $@
 

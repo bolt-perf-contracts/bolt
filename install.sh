@@ -226,9 +226,6 @@ pushd "$BUILDDIR/klee"
     echo "export KLEE_INCLUDE=$BUILDDIR/klee/include" >> "$PATHSFILE"
     . "$PATHSFILE"
   popd
-  pushd trace-instructions
-    make clean && make 
-  popd
 popd
 
 ### PIN
@@ -238,5 +235,9 @@ tar xf pin.tar.gz
 mv pin-$PIN_RELEASE-gcc-linux pin
 rm pin.tar.gz
 echo 'PATH='"$BUILDDIR/pin"':$PATH' >> "$PATHSFILE"
+echo "export PINDIR=$BUILDDIR/pin" >> "$PATHSFILE" 
+. "$PATHSFILE"
 
-
+pushd $BUILDDIR/klee/trace-instructions
+    make clean && make 
+popd

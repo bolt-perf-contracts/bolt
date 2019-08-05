@@ -7,6 +7,7 @@
 int Num_bucket_traversals;
 int Num_hash_collisions;
 int recent_flow;
+char *prefix; /* For tracing */
 
 void dmap_set_entry_condition(struct DoubleMap *map, entry_condition *c)
 {
@@ -102,8 +103,10 @@ int dmap_allocate(map_keys_equality eq_a,
 
     /* Tracing other variable(s) */
 
-    klee_trace_extra_ptr(&(*map_out)->capacity, sizeof((*map_out)->capacity),
-                         "dmap_capacity", "type", TD_BOTH);
+    TRACE_VAL((uint32_t)(*map_out), "dmap", _u32)
+
+    TRACE_VAR((*map_out)->capacity, "dmap_capacity")
+    TRACE_VAR((*map_out)->occupancy, "dmap_occupancy")
 
     /* Do not assume the ent_cond here, because depending on what comes next,
        we may change the key_a, key_b or value. we assume the condition after
@@ -122,17 +125,12 @@ int dmap_get_a(struct DoubleMap *map, void *key, int *index)
   /* Tracing function and necessary variable(s) */
 
   klee_trace_ret();
+  TRACE_VAL((uint32_t)(map), "dmap", _u32)
 
-  klee_trace_extra_ptr(&map->has_this_key, sizeof(map->has_this_key),
-                       "dmap_has_this_key", "type", TD_BOTH);
-  klee_trace_extra_ptr(&map->occupancy, sizeof(map->occupancy),
-                       "dmap_occupancy", "type", TD_BOTH);
-  klee_trace_extra_ptr(&Num_bucket_traversals, sizeof(Num_bucket_traversals),
-                       "Num_bucket_traversals", "type", TD_BOTH);
-  klee_trace_extra_ptr(&Num_hash_collisions, sizeof(Num_hash_collisions),
-                       "Num_hash_collisions", "type", TD_BOTH);
-  klee_trace_extra_ptr(&recent_flow, sizeof(recent_flow),
-                       "recent_flow", "type", TD_BOTH);
+  TRACE_VAR(map->has_this_key, "dmap_has_this_key")
+  TRACE_VAR(Num_bucket_traversals, "Num_bucket_traversals")
+  TRACE_VAR(Num_hash_collisions, "Num_hash_collisions")
+  TRACE_VAR(recent_flow, "recent_flow")
 
   if (map->has_this_key)
   {
@@ -166,17 +164,12 @@ int dmap_get_b(struct DoubleMap *map, void *key, int *index)
   /* Tracing function and necessary variable(s) */
 
   klee_trace_ret();
+  TRACE_VAL((uint32_t)(map), "dmap", _u32)
 
-  klee_trace_extra_ptr(&map->has_this_key, sizeof(map->has_this_key),
-                       "dmap_has_this_key", "type", TD_BOTH);
-  klee_trace_extra_ptr(&map->occupancy, sizeof(map->occupancy),
-                       "dmap_occupancy", "type", TD_BOTH);
-  klee_trace_extra_ptr(&Num_bucket_traversals, sizeof(Num_bucket_traversals),
-                       "Num_bucket_traversals", "type", TD_BOTH);
-  klee_trace_extra_ptr(&Num_hash_collisions, sizeof(Num_hash_collisions),
-                       "Num_hash_collisions", "type", TD_BOTH);
-  klee_trace_extra_ptr(&recent_flow, sizeof(recent_flow),
-                       "recent_flow", "type", TD_BOTH);
+  TRACE_VAR(map->has_this_key, "dmap_has_this_key")
+  TRACE_VAR(Num_bucket_traversals, "Num_bucket_traversals")
+  TRACE_VAR(Num_hash_collisions, "Num_hash_collisions")
+  TRACE_VAR(recent_flow, "recent_flow")
 
   if (map->has_this_key)
   {
@@ -209,17 +202,12 @@ int dmap_put(struct DoubleMap *map, void *value_, int index)
   /* Tracing function and necessary variable(s) */
 
   klee_trace_ret();
+  TRACE_VAL((uint32_t)(map), "dmap", _u32)
 
-  klee_trace_extra_ptr(&map->has_this_key, sizeof(map->has_this_key),
-                       "dmap_has_this_key", "type", TD_BOTH);
-  klee_trace_extra_ptr(&map->occupancy, sizeof(map->occupancy),
-                       "dmap_occupancy", "type", TD_BOTH);
-  klee_trace_extra_ptr(&Num_bucket_traversals, sizeof(Num_bucket_traversals),
-                       "Num_bucket_traversals", "type", TD_BOTH);
-  klee_trace_extra_ptr(&Num_bucket_traversals, sizeof(Num_bucket_traversals),
-                       "Num_bucket_traversals", "type", TD_BOTH);
-  klee_trace_extra_ptr(&recent_flow, sizeof(recent_flow),
-                       "recent_flow", "type", TD_BOTH);
+  TRACE_VAR(map->has_this_key, "dmap_has_this_key")
+  TRACE_VAR(Num_bucket_traversals, "Num_bucket_traversals")
+  TRACE_VAR(Num_hash_collisions, "Num_hash_collisions")
+  TRACE_VAR(recent_flow, "recent_flow")
 
   /* Can not ever fail, because index is guaranteed to point to the available
      slot, therefore the map can not be full at this point.
@@ -263,10 +251,10 @@ void dmap_get_value(struct DoubleMap *map, int index, void *value_out)
   ALLOW(map);
 
   /* Tracing function and necessary variable(s) */
-
   klee_trace_ret();
-  klee_trace_extra_ptr(&recent_flow, sizeof(recent_flow),
-                       "recent_flow", "type", TD_BOTH);
+  TRACE_VAL((uint32_t)(map), "dmap", _u32)
+
+  TRACE_VAR(recent_flow, "recent_flow")
 
   if (map->entry_claimed)
   {

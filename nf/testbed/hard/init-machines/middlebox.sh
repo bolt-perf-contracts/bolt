@@ -10,5 +10,5 @@ sudo apt-get install -yqq \
     libglib2.0-dev daemon iperf3 netperf tmux
 
 pushd "$CASE_ROOT"
-  bash vnds/install.sh dpdk-only
+  bash bolt/install.sh dpdk-only
 popd

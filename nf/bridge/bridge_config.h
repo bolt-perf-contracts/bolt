@@ -24,3 +24,15 @@ void bridge_config_init(struct bridge_config* config,
 void bridge_config_cmdline_print_usage(void);
 
 void bridge_print_config(struct bridge_config* config);
+
+enum TrafficClass
+{
+	UNDEFINED,
+	KNOWN_SRC,
+  UNKNOWN_SRC,
+  UNKNOWN_SRC_FULL,
+	KNOWN_DEST,
+  UNKNOWN_DEST
+};
+
+extern enum TrafficClass NF_TRAFFIC_CLASS;

@@ -101,26 +101,20 @@ void contract_init()
        "(Sub w32 (ReadLSB w32 0 initial_dmap_capacity) (w32 1))"},
       {"map_occupancy",
        "(Sub w32 (ReadLSB w32 0 initial_map_capacity) (w32 1))"},
-      {"Num_bucket_traversals", "(ReadLSB w32 0 initial_dmap_occupancy)"},
+      {"Num_bucket_traversals", "(ReadLSB w32 0 initial_map_occupancy)"},
       {"Num_hash_collisions", "(ReadLSB w32 0 initial_Num_bucket_traversals)"},
       {"expired_flows", "(ReadLSB w32 0 initial_map_occupancy)"},
-      {"timestamp_option", {"(w32 1)"}},
-      {"lpm_stages", "(ReadLSB w32 0 initial_lpm_stages)"},
-      {"available_backends", "(ReadLSB w32 0 initial_map_capacity)"},
-      {"recent_flow", "(ReadLSB w32 0 initial_recent_flow)"},
+      {"available_backends", "(ReadLSB w32 0 initial_backend_capacity)"},
   };
 
   /* List of shadow variables that allow more precise contracts. 
   The user cannot specify these unless they are also UVs*/
 
   optimization_variables = {
-      {"expired_flows",
-       {"(w32 0)", "(ReadLSB w32 0 initial_dmap_occupancy)"}},
       {"dchain_out_of_space", {"(w32 0)", "(w32 1)"}},
       {"dmap_has_this_key", {"(w32 0)", "(w32 1)"}},
       {"map_has_this_key", {"(w32 0)", "(w32 1)"}},
-      {"timestamp_option", {"(w32 0)", "(w32 1)"}},
-      {"lpm_stages", {"(w32 1)", "(w32 2)"}},
+      {"multi_stage_lookup", {"(w32 0)", "(w32 1)"}},
       {"recent_flow", {"(w32 0)", "(w32 1) "}},
   };
 
@@ -135,8 +129,6 @@ void contract_init()
       {"dmap_erase", {"Num_bucket_traversals", "Num_hash_collisions"}},
       {"expire_items", {"Num_bucket_traversals", "Num_hash_collisions", "expired_flows"}},
       {"expire_items_single_map", {"Num_bucket_traversals", "Num_hash_collisions", "expired_flows"}},
-      {"handle_packet_timestamp", {"timestamp_option"}},
-      {"lpm_lookup", {"lpm_stages"}},
       {"lb_find_preferred_available_backend", {"available_backends"}},
   };
 
@@ -151,6 +143,8 @@ void contract_init()
       {"dmap_erase", {"recent_flow"}},
       {"dmap_get_value", {"recent_flow"}},
       {"expire_items", {"recent_flow"}},
+      {"lpm_lookup", {"multi_stage_lookup"}},
+
   };
 
   fn_variables.insert(fn_user_variables.begin(), fn_user_variables.end());
@@ -195,7 +189,7 @@ void contract_init()
       {"vector_borrow_half", {{0, "true"}}},
       {"vector_return_full", {{0, "true"}}},
       {"vector_return_half", {{0, "true"}}},
-      {"handle_packet_timestamp", {{0, "(Eq 1 (ReadLSB w32 0 current_timestamp_option))"}}},
+      {"handle_packet_timestamp", {{0, "true"}}},
       {"lpm_init", {{0, "true"}}},
       {"lpm_lookup", {{0, "true"}}},
       {"trace_reset_buffers", {{0, "true"}}},
@@ -361,6 +355,9 @@ std::set<std::string> contract_get_symbols()
       "array initial_expired_flows[4] : w32 -> w8 = symbolic",
 
       /* CHT symbols */
+      "array backend_capacity[4] : w32 -> w8 = symbolic",
+      "array current_backend_capacity[4] : w32 -> w8 = symbolic",
+      "array initial_backend_capacity[4] : w32 -> w8 = symbolic",
       "array available_backends[4] : w32 -> w8 = symbolic",
       "array current_available_backends[4] : w32 -> w8 = symbolic",
       "array initial_available_backends[4] : w32 -> w8 = symbolic",
@@ -382,16 +379,54 @@ std::set<std::string> contract_get_symbols()
       "array mbuf[4] : w32 -> w8 = symbolic",
       "array current_mbuf[4] : w32 -> w8 = symbolic",
       "array initial_mbuf[4] : w32 -> w8 = symbolic",
-      "array lpm_stages[4] : w32 -> w8 = symbolic",
-      "array current_lpm_stages[4] : w32 -> w8 = symbolic",
-      "array initial_lpm_stages[4] : w32 -> w8 = symbolic",
-      "array timestamp_option[4] : w32 -> w8 = symbolic",
-      "array current_timestamp_option[4] : w32 -> w8 = symbolic",
-      "array initial_timestamp_option[4] : w32 -> w8 = symbolic",
+      "array multi_stage_lookup[4] : w32 -> w8 = symbolic",
+      "array current_multi_stage_lookup[4] : w32 -> w8 = symbolic",
+      "array initial_multi_stage_lookup[4] : w32 -> w8 = symbolic",
       "array recent_flow[4] : w32 -> w8 = symbolic",
       "array current_recent_flow[4] : w32 -> w8 = symbolic",
       "array initial_recent_flow[4] : w32 -> w8 = symbolic",
   };
+}
+/* **************************************** */
+int contract_get_symbol_size(std::string symbol_name)
+{
+  return std::map<std::string, int>({
+
+      /* Map symbols */
+      {"map_capacity", 4},
+      {"map_occupancy", 4},
+      {"Num_bucket_traversals", 4},
+      {"Num_hash_collisions", 4},
+      {"map_has_this_key", 4},
+
+      /* Double Map symbols */
+      {"dmap_capacity", 4},
+      {"dmap_occupancy", 4},
+      {"dmap_has_this_key", 4},
+
+      /* Double Chain symbols */
+      {"dchain_out_of_space", 4},
+
+      /* Expirator symbols */
+      {"expired_flows", 4},
+
+      /* CHT symbols */
+      {"backend_capacity", 4},
+      {"available_backends", 4},
+
+      /* Vector symbols */
+      {"borrowed_cell", 6}, // Legacy from Vigor,
+                                                       // not
+                                                       // required by Bolt
+      {"current_borrowed_cell", 6},
+
+      /* Other symbols */
+      {"incoming_package", 4},
+      {"user_buf_addr", 4},
+      {"mbuf", 4},
+      {"multi_stage_lookup", 4},
+      {"recent_flow", 4},
+  })[symbol_name];
 }
 /* **************************************** */
 int contract_num_sub_contracts(std::string function_name)
