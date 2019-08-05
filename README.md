@@ -2,7 +2,7 @@ This repository contains the Bolt toolchain which automatically generates perfor
 
 # Prerequisites
 
-The install script assumes you are using Ubuntu 18.04/16.04, though Debian may also work. You could also install the dependencies manually.
+The install script assumes you are using Ubuntu 16.04, though Debian may also work. You could also install the dependencies manually.
 
 To run Bolt with hardware models (include DPDK in performance contract), you need a lot of RAM (100+ GB).
 
